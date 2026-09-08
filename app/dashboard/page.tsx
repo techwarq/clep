@@ -5,12 +5,26 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SegmentedTabs from "../../components/SegmentedTabs";
-import { clearSession, getToken, getUser, type StoredUser } from "../../lib/api";
+import {
+  clearSession,
+  createJob,
+  downloadExport,
+  getJobStatus,
+  getToken,
+  getUser,
+  listJobs,
+  sendChatMessage,
+  startExtract,
+  uploadToPresignedUrl,
+  type JobDetail,
+  type JobListItem,
+  type StoredUser,
+} from "../../lib/api";
 
-type Status = "done" | "review" | "processing";
+type Status = "done" | "review" | "processing" | "failed";
 
 type Conv = {
-  id: number;
+  id: string; // real jobId
   name: string;
   type: string;
   out: string;
@@ -18,12 +32,81 @@ type Conv = {
   flagged?: number;
   date: string;
   progress?: number;
+  error?: string;
 };
 
-const SEED: Conv[] = [
-  { id: 1, name: "statement_march.pdf", type: "Bank Statement", out: "Excel", status: "done", date: "2m ago" },
-  { id: 2, name: "invoice_042.pdf", type: "Invoice", out: "QuickBooks", status: "review", flagged: 2, date: "1h ago" }
-];
+// documentType, as classified by the backend, only exists once a job has
+// left "parsing" — the filename heuristic below is what covers it before
+// that and for the lightweight GET /jobs list (which doesn't include it).
+const DOC_TYPE_LABEL: Record<string, string> = {
+  statement: "Bank Statement",
+  invoice: "Invoice",
+  receipt: "Receipt",
+};
+
+function typeLabel(documentType: string | undefined, filename: string): string {
+  if (documentType && DOC_TYPE_LABEL[documentType]) return DOC_TYPE_LABEL[documentType];
+  return detectType(filename);
+}
+
+function relativeTime(iso: string): string {
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function statusFromJob(job: { status: JobDetail["status"]; summary: { needsReview: number } }): Status {
+  if (job.status === "complete") return "done";
+  if (job.status === "reviewing") return job.summary.needsReview > 0 ? "review" : "done";
+  if (job.status === "failed") return "failed";
+  return "processing"; // uploaded, parsing, extracting, validating
+}
+
+// Rough combined progress across both async phases (parsing then
+// extracting) — parsedPages/filesParsed only exist while status is
+// "parsing" (see routes/jobs.ts's live GET /jobs/:id response), totalPages
+// is only known once parsing finishes. Good enough for a progress bar, not
+// meant to be exact.
+function progressFromJob(job: JobDetail): number {
+  if (job.status === "parsing") {
+    if (job.totalFiles) return Math.round(((job.filesParsed ?? 0) / job.totalFiles) * 40);
+    return 8;
+  }
+  if (job.status === "extracting" && job.totalPages) {
+    return Math.round(40 + (job.processedPages / job.totalPages) * 55);
+  }
+  if (job.status === "validating") return 96;
+  return 10;
+}
+
+function convFromListItem(j: JobListItem): Conv {
+  const name = j.files[0] ?? "document";
+  return {
+    id: j.id,
+    name,
+    type: detectType(name),
+    out: "Excel",
+    status: statusFromJob(j),
+    flagged: j.summary.needsReview > 0 ? j.summary.needsReview : undefined,
+    date: relativeTime(j.updatedAt),
+    progress: 10,
+  };
+}
+
+function mergeJobIntoConv(row: Conv, job: JobDetail): Conv {
+  return {
+    ...row,
+    type: typeLabel(job.files[0]?.documentType, row.name),
+    status: statusFromJob(job),
+    progress: progressFromJob(job),
+    flagged: job.summary.needsReview > 0 ? job.summary.needsReview : undefined,
+    error: job.status === "failed" ? job.error : undefined,
+    date: relativeTime(job.updatedAt),
+  };
+}
 
 const GHOSTS = [
   "Describe your sheet: “Columns: Date, Merchant, Amount”",
@@ -62,7 +145,8 @@ function short(name: string): string {
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<StoredUser | null>(null);
-  const [convs, setConvs] = useState<Conv[]>(SEED);
+  const [convs, setConvs] = useState<Conv[]>([]);
+  const convsRef = useRef<Conv[]>([]);
   const [forceEmpty, setForceEmpty] = useState(false);
   const [presets, setPresets] = useState<string[]>(PRESETS);
   const [activePreset, setActivePreset] = useState<string | null>(null);
@@ -87,16 +171,44 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    convsRef.current = convs;
+  }, [convs]);
+
+  useEffect(() => {
     if (!getToken()) {
       router.replace("/login");
       return;
     }
     setUser(getUser());
+    listJobs()
+      .then((jobs) => setConvs(jobs.map(convFromListItem)))
+      .catch((err) => showToast(err instanceof Error ? err.message : "Couldn't load your jobs"));
+
     const t = window.setInterval(() => setGi((i) => (i + 1) % GHOSTS.length), 2600);
     // hidden design-review hook, never shown in UI: /dashboard?empty
     if (new URLSearchParams(window.location.search).get("empty") !== null) setForceEmpty(true);
     return () => window.clearInterval(t);
   }, [router]);
+
+  // Polls every in-flight job every 3s until it reaches a terminal status.
+  // Reads convsRef (not convs directly) so this effect runs once for the
+  // component's lifetime instead of re-subscribing on every state update.
+  useEffect(() => {
+    const t = window.setInterval(async () => {
+      const inFlight = convsRef.current.filter((c) => c.status === "processing");
+      await Promise.all(
+        inFlight.map(async (row) => {
+          try {
+            const job = await getJobStatus(row.id);
+            setConvs((cs) => cs.map((r) => (r.id === row.id ? mergeJobIntoConv(r, job) : r)));
+          } catch {
+            // transient poll failure — leave the row as-is, retry next tick
+          }
+        }),
+      );
+    }, 3000);
+    return () => window.clearInterval(t);
+  }, []);
 
   const attachNote = () => {
     const v = note.trim();
@@ -106,51 +218,56 @@ export default function Dashboard() {
     showToast("Format note saved — applies to your next upload");
   };
 
-  const addUpload = (f: File | null) => {
-    const id = Date.now();
-    const name = f?.name ?? "pasted-document.pdf";
-    setConvs((cs) => [
-      { id, name, type: "Detecting…", out: format, status: "processing", date: "just now", progress: 4 },
-      ...cs
-    ]);
-    const tick = window.setInterval(() => {
-      setConvs((cs) =>
-        cs.map((r) => (r.id === id ? { ...r, progress: Math.min(96, (r.progress ?? 0) + 8 + Math.random() * 18) } : r))
-      );
-    }, 320);
-    window.setTimeout(() => {
-      window.clearInterval(tick);
-      const flagged = Math.random() > 0.55;
-      setConvs((cs) =>
-        cs.map((r) =>
-          r.id === id
-            ? {
-                ...r,
-                status: flagged ? "review" : "done",
-                flagged: flagged ? 1 + Math.floor(Math.random() * 3) : undefined,
-                type: detectType(name),
-                progress: 100
-              }
-            : r
-        )
-      );
+  const addUpload = async (f: File | null) => {
+    if (!f) return;
+    const chosenFormat = format;
+    const chosenNote = attached;
+    let jobId: string | null = null;
+
+    try {
+      const created = await createJob([{ name: f.name, contentType: f.type || "application/pdf" }]);
+      jobId = created.jobId;
+      setConvs((cs) => [
+        { id: jobId!, name: f.name, type: "Detecting…", out: chosenFormat, status: "processing", date: "just now", progress: 5 },
+        ...cs
+      ]);
+
+      await uploadToPresignedUrl(created.uploads[0].uploadUrl, f);
+      // A format note describes a custom schema — sent as one /chat message
+      // before locking it in with /extract, rather than the full
+      // preview/refine loop the backend supports (no UI for that here yet).
+      if (chosenNote) await sendChatMessage(jobId, chosenNote);
+      await startExtract(jobId);
+
       showToast(
-        flagged
-          ? `Done as ${format}${sampleName ? ` (matched to ${short(sampleName)})` : ""} — a few rows need your eyes`
-          : `${format} ready — math checks out${attached ? " · custom format applied" : ""}${sampleName ? ` · matched to ${short(sampleName)}` : ""}`
+        `${short(f.name)} — processing started${chosenNote ? " with your custom format" : ""}${sampleName ? ` · matched to ${short(sampleName)}` : ""}`
       );
-    }, 3400);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Upload failed";
+      if (jobId) {
+        const failedId = jobId;
+        setConvs((cs) => cs.map((r) => (r.id === failedId ? { ...r, status: "failed", error: message } : r)));
+      }
+      showToast(message);
+    }
   };
 
-  const downloadRow = (c: Conv) => {
-    const csv = `Date,Description,Amount,Balance\n03/01,Opening Balance,,12480.20\n03/03,Sample row from ${c.name},10630.80,23111.00\n`;
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = c.name.replace(/\.[^.]+$/, "") + ".csv";
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast("CSV downloaded");
+  const downloadRow = async (c: Conv) => {
+    // "QuickBooks" has no dedicated export format on the backend yet —
+    // falls back to xlsx, same as "Excel".
+    const fmt = c.out === "CSV" ? "csv" : "xlsx";
+    try {
+      const blob = await downloadExport(c.id, fmt);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = c.name.replace(/\.[^.]+$/, "") + (fmt === "csv" ? ".csv" : ".xlsx");
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`${fmt.toUpperCase()} downloaded`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Download failed");
+    }
   };
 
   const visible = forceEmpty ? [] : convs;
@@ -320,9 +437,20 @@ export default function Dashboard() {
                         <span className="mini-spin" /> {Math.round(c.progress ?? 0)}%
                       </span>
                     )}
+                    {c.status === "failed" && (
+                      <span className="badge badge-failed" title={c.error}>✕ Failed</span>
+                    )}
                     <div className="recent-actions">
                       {c.status === "review" ? (
-                        <button className="mini-btn solid" onClick={() => showToast(`Opening review for ${c.name}…`)}>Review →</button>
+                        <button
+                          className="mini-btn solid"
+                          onClick={() => {
+                            showToast("Flagged rows are marked in the download — inline review view isn't built yet");
+                            downloadRow(c);
+                          }}
+                        >
+                          Review →
+                        </button>
                       ) : c.status === "done" ? (
                         <>
                           <button className="mini-btn" onClick={() => downloadRow(c)}>Download</button>
