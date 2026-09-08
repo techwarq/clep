@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import DemoWidget from "../components/DemoWidget";
+import Reveal from "../components/Reveal";
 
 const DOES_REST = [
   "Finds the structure",
@@ -113,18 +114,18 @@ export default function Page() {
       <main id="top" className="wrap">
         {/* HERO */}
         <section className="hero">
-          <span className="pill">
+          <span className="pill hero-anim d1">
             <span className="dot" /> Turn messy documents into structured data
           </span>
-          <h1>
+          <h1 className="hero-anim d2">
             Give Clep anything messy. Get <em>clean, verified data</em> back.
           </h1>
-          <p className="sub">
+          <p className="sub hero-anim d3">
             Upload PDFs, scans, screenshots, receipts, invoices, statements, reports, or photos.
             Tell Clep what you need. It extracts the data, checks it, and flags only what needs
             your attention.
           </p>
-          <div className="hero-cta">
+          <div className="hero-cta hero-anim d4">
             <button className="btn btn-lime btn-lg" onClick={scrollToDemo}>
               Try it free — no signup needed
             </button>
@@ -132,25 +133,30 @@ export default function Page() {
               ▶ See how it works
             </a>
           </div>
-          <div className="trust">Your first conversion is free. No email. No credit card.</div>
+          <div className="trust hero-anim d5">Your first conversion is free. No email. No credit card.</div>
         </section>
 
-        <div className="logos">
+        <div className="logos hero-anim d6">
           WORKS ON THE UGLY STUFF
-          <div className="logo-row" style={{ fontSize: 14 }}>
-            <span>PDF</span>
-            <span>SCANS</span>
-            <span>PHOTOS</span>
-            <span>SCREENSHOTS</span>
-            <span>INVOICES</span>
-            <span>STATEMENTS</span>
+          <div className="marquee">
+            <div className="marquee-track">
+              {[0, 1].map((k) => (
+                <div className="marquee-group" key={k}>
+                  {["PDF", "SCANS", "PHOTOS", "SCREENSHOTS", "INVOICES", "STATEMENTS", "RECEIPTS", "REPORTS"].map((f) => (
+                    <span key={f}>{f}</span>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        <DemoWidget onToast={showToast} />
+        <div className="hero-anim d6">
+          <DemoWidget onToast={showToast} />
+        </div>
 
         {/* CLEP DOES THE REST */}
-        <section className="section">
+        <Reveal className="section">
           <div className="problem">
             <div className="problem-quote">
               <div className="eyebrow">Tell Clep what you want</div>
@@ -169,10 +175,10 @@ export default function Page() {
               </ul>
             </div>
           </div>
-        </section>
+        </Reveal>
 
         {/* VERIFY */}
-        <section className="section" id="features">
+        <Reveal className="section" id="features">
           <div className="eyebrow">Extraction isn&apos;t enough</div>
           <h2 className="h2">Clep checks its work.</h2>
           <p className="lead">
@@ -191,10 +197,10 @@ export default function Page() {
           <div className="flag-banner">
             When Clep can&apos;t prove something, <strong>it flags it instead of pretending it&apos;s correct.</strong>
           </div>
-        </section>
+        </Reveal>
 
         {/* UGLY DOCS */}
-        <section className="section">
+        <Reveal className="section">
           <div className="eyebrow">No templates. No training.</div>
           <h2 className="h2">Built for ugly documents.</h2>
           <div className="ugly-cloud">
@@ -202,13 +208,13 @@ export default function Page() {
               <span key={u} className="ugly-chip">{u}</span>
             ))}
           </div>
-          <p className="lead" style={{ marginTop: 22, fontSize: 19 }}>
-            <strong>No templates. No training. No cleanup marathon.</strong>
-          </p>
-        </section>
+            <p className="lead" style={{ marginTop: 22, fontSize: 19 }}>
+              <strong>No templates. No training. No cleanup marathon.</strong>
+            </p>
+        </Reveal>
 
         {/* HOW */}
-        <section className="section" id="how">
+        <Reveal className="section" id="how">
           <div className="eyebrow">How it works</div>
           <h2 className="h2">From messy file to usable data.</h2>
           <div className="steps4">
@@ -233,10 +239,10 @@ export default function Page() {
               <p>Excel, CSV, JSON, Google Sheets, APIs, and more.</p>
             </div>
           </div>
-        </section>
+        </Reveal>
 
         {/* WHY */}
-        <section className="section" id="compare">
+        <Reveal className="section" id="compare">
           <div className="eyebrow">Why switch?</div>
           <h2 className="h2">Why Clep?</h2>
           <div className="compare">
@@ -251,10 +257,10 @@ export default function Page() {
               </div>
             ))}
           </div>
-        </section>
+        </Reveal>
 
         {/* MID CTA */}
-        <section className="cta">
+        <Reveal className="cta">
           <div>
             <h2>Stop checking every row. Let Clep find the rows that matter.</h2>
             <p>Upload a messy document. Get structured data back. Review only what couldn&apos;t be verified.</p>
@@ -274,10 +280,10 @@ export default function Page() {
             <div style={{ fontSize: 12, color: "#55605b", marginTop: 10 }}>Avg. time saved per document</div>
             <div style={{ fontSize: 26, fontWeight: 800, color: "#4d7c0f" }}>2h 13m</div>
           </div>
-        </section>
+        </Reveal>
 
         {/* PRICING */}
-        <section className="section" id="pricing">
+        <Reveal className="section" id="pricing">
           <div className="eyebrow">Pricing</div>
           <h2 className="h2">Simple pricing. No surprise credits.</h2>
           <div className="pricing4">
@@ -341,10 +347,10 @@ export default function Page() {
               </button>
             </div>
           </div>
-        </section>
+        </Reveal>
 
         {/* FAQ */}
-        <section className="section" id="faq">
+        <Reveal className="section" id="faq">
           <div className="eyebrow">FAQ</div>
           <h2 className="h2">Frequently asked questions.</h2>
           <div className="faq">
@@ -384,10 +390,10 @@ export default function Page() {
               </p>
             </details>
           </div>
-        </section>
+        </Reveal>
 
         {/* FINAL CTA */}
-        <section className="cta">
+        <Reveal className="cta">
           <div>
             <h2>Your documents are messy. Your data doesn&apos;t have to be.</h2>
             <p>Upload the first one free.</p>
@@ -405,7 +411,7 @@ export default function Page() {
               <button className="btn btn-lime" onClick={scrollToDemo}>Convert a document free</button>
             </div>
           </div>
-        </section>
+        </Reveal>
 
         <footer>
           <div className="foot">

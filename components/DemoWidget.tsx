@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import SegmentedTabs from "./SegmentedTabs";
 
 type Row = {
@@ -87,6 +87,24 @@ function SkeletonRow() {
       <td><span className="skel" style={{ width: 64 }} /></td>
     </tr>
   );
+}
+
+function CountUp({ value }: { value: string }) {
+  const target = parseInt(value.replace(/[^0-9]/g, ""), 10) || 0;
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const t0 = performance.now();
+    const dur = 900;
+    const step = (t: number) => {
+      const p = Math.min(1, (t - t0) / dur);
+      setN(Math.round(target * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
+  return <>{n.toLocaleString("en-US")}</>;
 }
 
 export default function DemoWidget({ onToast }: { onToast: (m: string) => void }) {
@@ -295,10 +313,10 @@ export default function DemoWidget({ onToast }: { onToast: (m: string) => void }
           </div>
 
           {phase === "done" ? (
-            <div className="stat-row">
-              <div><b>{active.stats.extracted}</b><span>extracted</span></div>
-              <div><b className="good">{active.stats.verified}</b><span>verified</span></div>
-              <div><b className="warn">{active.stats.review}</b><span>need review</span></div>
+            <div className="stat-row" key={sampleKey}>
+              <div><b><CountUp value={active.stats.extracted} /></b><span>extracted</span></div>
+              <div><b className="good"><CountUp value={active.stats.verified} /></b><span>verified</span></div>
+              <div><b className="warn"><CountUp value={active.stats.review} /></b><span>need review</span></div>
             </div>
           ) : (
             <ol className="conv-steps">
