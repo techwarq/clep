@@ -303,7 +303,7 @@ export default function DemoWidget({ onToast }: { onToast: (m: string) => void }
           ) : (
             <ol className="conv-steps">
               {STEPS.map((s, i) => {
-                const done = phase === "done" || (phase === "scanning" && i < stepIdx);
+                const done = phase === "scanning" && i < stepIdx;
                 const act = phase === "scanning" && i === stepIdx;
                 return (
                   <li key={s} className={done ? "done" : act ? "active" : ""}>
