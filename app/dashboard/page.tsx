@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SegmentedTabs from "../../components/SegmentedTabs";
-import { clearToken, getToken } from "../../lib/api";
+import { clearSession, getToken, getUser, type StoredUser } from "../../lib/api";
 
 type Status = "done" | "review" | "processing";
 
@@ -61,6 +61,7 @@ function short(name: string): string {
 
 export default function Dashboard() {
   const router = useRouter();
+  const [user, setUser] = useState<StoredUser | null>(null);
   const [convs, setConvs] = useState<Conv[]>(SEED);
   const [forceEmpty, setForceEmpty] = useState(false);
   const [presets, setPresets] = useState<string[]>(PRESETS);
@@ -90,6 +91,7 @@ export default function Dashboard() {
       router.replace("/login");
       return;
     }
+    setUser(getUser());
     const t = window.setInterval(() => setGi((i) => (i + 1) % GHOSTS.length), 2600);
     // hidden design-review hook, never shown in UI: /dashboard?empty
     if (new URLSearchParams(window.location.search).get("empty") !== null) setForceEmpty(true);
@@ -167,19 +169,19 @@ export default function Dashboard() {
             </span>
             <div className="avatar-wrap">
               <button className="avatar" onClick={() => setMenuOpen(!menuOpen)} aria-label="Account menu">
-                S
+                {user?.name?.[0]?.toUpperCase() ?? "?"}
               </button>
               {menuOpen && (
                 <>
                   <div className="menu-scrim" onClick={() => setMenuOpen(false)} />
                   <div className="avatar-menu">
                     <div className="avatar-head">
-                      <strong>sonali@clep.io</strong>
+                      <strong>{user?.email ?? "Account"}</strong>
                       <span>Starter plan</span>
                     </div>
                     <button onClick={() => { setMenuOpen(false); showToast("Settings open at launch"); }}>Settings</button>
                     <button onClick={() => { setMenuOpen(false); showToast("Billing opens at launch"); }}>Billing</button>
-                    <button onClick={() => { setMenuOpen(false); clearToken(); window.location.href = "/login"; }}>Logout</button>
+                    <button onClick={() => { setMenuOpen(false); clearSession(); window.location.href = "/login"; }}>Logout</button>
                   </div>
                 </>
               )}

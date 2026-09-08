@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { login, setToken, signup } from "../lib/api";
+import { login, setToken, setUser, signup } from "../lib/api";
 
 export default function AuthCard({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
@@ -29,8 +29,12 @@ export default function AuthCard({ mode }: { mode: "login" | "signup" }) {
 
     setBusy(true);
     try {
-      const { token } = isSignup ? await signup(email.trim(), password) : await login(email.trim(), password);
+      const trimmedEmail = email.trim();
+      const { token, name: resolvedName } = isSignup
+        ? await signup(trimmedEmail, password, name.trim())
+        : await login(trimmedEmail, password);
       setToken(token);
+      setUser({ email: trimmedEmail, name: resolvedName });
       setToast(isSignup ? "Account created — welcome to clep!" : "Welcome back!");
       window.setTimeout(() => router.push("/dashboard"), 900);
     } catch (err) {
