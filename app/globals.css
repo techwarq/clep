@@ -462,6 +462,10 @@ footer { border-top: 1px solid var(--line-soft); margin-top: 20px; padding: 26px
 }
 .pw-toggle:hover { background: #eef1ec; }
 .auth-row { display: flex; justify-content: space-between; align-items: center; margin: 2px 0 14px; }
+.auth-form-error {
+  font-size: 13px; color: var(--red); background: rgba(220,38,38,0.08);
+  border: 1px solid rgba(220,38,38,0.3); border-radius: 8px; padding: 9px 12px; margin: 2px 0 14px;
+}
 .auth-submit { width: 100%; justify-content: center; margin-top: 4px; }
 .auth-submit:disabled { opacity: 0.65; cursor: wait; }
 .auth-alt { font-size: 14px; color: var(--muted); margin: 18px 0 0; }

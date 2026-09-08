@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { login, setToken, signup } from "../lib/api";
 
 export default function AuthCard({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function AuthCard({ mode }: { mode: "login" | "signup" }) {
 
   const isSignup = mode === "signup";
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (isSignup && name.trim().length < 2) errs.name = "Tell us your name";
@@ -25,11 +26,17 @@ export default function AuthCard({ mode }: { mode: "login" | "signup" }) {
     if (password.length < 8) errs.password = "Minimum 8 characters";
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
+
     setBusy(true);
-    window.setTimeout(() => {
+    try {
+      const { token } = isSignup ? await signup(email.trim(), password) : await login(email.trim(), password);
+      setToken(token);
       setToast(isSignup ? "Account created — welcome to clep!" : "Welcome back!");
       window.setTimeout(() => router.push("/dashboard"), 900);
-    }, 900);
+    } catch (err) {
+      setBusy(false);
+      setErrors({ form: err instanceof Error ? err.message : "Something went wrong — try again" });
+    }
   };
 
   return (
@@ -102,6 +109,8 @@ export default function AuthCard({ mode }: { mode: "login" | "signup" }) {
                 </button>
               </div>
             )}
+
+            {errors.form && <p className="auth-form-error" role="alert">{errors.form}</p>}
 
             <button className="btn btn-lime auth-submit" type="submit" disabled={busy}>
               {busy ? (isSignup ? "Creating account…" : "Logging in…") : isSignup ? "Create free account" : "Log in"}

@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import SegmentedTabs from "../../components/SegmentedTabs";
+import { clearToken, getToken } from "../../lib/api";
 
 type Status = "done" | "review" | "processing";
 
@@ -58,6 +60,7 @@ function short(name: string): string {
 }
 
 export default function Dashboard() {
+  const router = useRouter();
   const [convs, setConvs] = useState<Conv[]>(SEED);
   const [forceEmpty, setForceEmpty] = useState(false);
   const [presets, setPresets] = useState<string[]>(PRESETS);
@@ -83,11 +86,15 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    if (!getToken()) {
+      router.replace("/login");
+      return;
+    }
     const t = window.setInterval(() => setGi((i) => (i + 1) % GHOSTS.length), 2600);
     // hidden design-review hook, never shown in UI: /dashboard?empty
     if (new URLSearchParams(window.location.search).get("empty") !== null) setForceEmpty(true);
     return () => window.clearInterval(t);
-  }, []);
+  }, [router]);
 
   const attachNote = () => {
     const v = note.trim();
@@ -172,7 +179,7 @@ export default function Dashboard() {
                     </div>
                     <button onClick={() => { setMenuOpen(false); showToast("Settings open at launch"); }}>Settings</button>
                     <button onClick={() => { setMenuOpen(false); showToast("Billing opens at launch"); }}>Billing</button>
-                    <button onClick={() => { setMenuOpen(false); window.location.href = "/login"; }}>Logout</button>
+                    <button onClick={() => { setMenuOpen(false); clearToken(); window.location.href = "/login"; }}>Logout</button>
                   </div>
                 </>
               )}
