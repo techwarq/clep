@@ -23,7 +23,7 @@ import {
   type StoredUser,
 } from "../../lib/api";
 
-type Status = "done" | "review" | "processing" | "failed";
+type Status = "done" | "review" | "processing" | "failed" | "empty";
 
 type Conv = {
   id: string; // real jobId
@@ -60,9 +60,17 @@ function relativeTime(iso: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-function statusFromJob(job: { status: JobDetail["status"]; summary: { needsReview: number } }): Status {
-  if (job.status === "complete") return "done";
-  if (job.status === "reviewing") return job.summary.needsReview > 0 ? "review" : "done";
+// A job can legitimately finish with zero extracted rows (e.g. a document
+// that got classified wrong, or genuinely has no matching data) — that's
+// not the same as a successful conversion, so it gets its own status
+// rather than rendering identically to "done" with an active Download
+// button that'd just 400.
+function statusFromJob(job: { status: JobDetail["status"]; summary: { total: number; needsReview: number } }): Status {
+  if (job.status === "complete") return job.summary.total === 0 ? "empty" : "done";
+  if (job.status === "reviewing") {
+    if (job.summary.needsReview > 0) return "review";
+    return job.summary.total === 0 ? "empty" : "done";
+  }
   if (job.status === "failed") return "failed";
   return "processing"; // uploaded, parsing, extracting, validating
 }
@@ -444,6 +452,11 @@ export default function Dashboard() {
                     )}
                     {c.status === "failed" && (
                       <span className="badge badge-failed" title={c.error}>✕ Failed</span>
+                    )}
+                    {c.status === "empty" && (
+                      <span className="badge badge-processing" title="No rows matched this document — it may be the wrong file, or not the type it looks like">
+                        No data found
+                      </span>
                     )}
                     <div className="recent-actions">
                       {c.status === "review" ? (
