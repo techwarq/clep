@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import SegmentedTabs from "../../components/SegmentedTabs";
 import {
   clearSession,
   createJob,
@@ -119,13 +118,6 @@ function mergeJobIntoConv(row: Conv, job: JobDetail): Conv {
   };
 }
 
-const GHOSTS = [
-  "Describe your sheet: “Columns: Date, Merchant, Amount”",
-  "Describe your sheet: “Add a Category column”",
-  "Describe your sheet: “One tab per month”",
-  "Describe your sheet: “Match my QuickBooks columns”"
-];
-
 const SUGGEST = ["Date · Merchant · Amount", "+ Category column", "Monthly tabs"];
 
 const PRESETS = ["QuickBooks Format", "Tax Prep"];
@@ -162,9 +154,6 @@ export default function Dashboard() {
   const [presets, setPresets] = useState<string[]>(PRESETS);
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [format, setFormat] = useState("Excel");
-  const [sampleName, setSampleName] = useState<string | null>(null);
-  const sampleRef = useRef<HTMLInputElement>(null);
-  const [gi, setGi] = useState(0);
   const [drag, setDrag] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -209,10 +198,8 @@ export default function Dashboard() {
       .then((jobs) => setConvs(jobs.map(convFromListItem)))
       .catch((err) => showToast(err instanceof Error ? err.message : "Couldn't load your jobs"));
 
-    const t = window.setInterval(() => setGi((i) => (i + 1) % GHOSTS.length), 2600);
     // hidden design-review hook, never shown in UI: /dashboard?empty
     if (new URLSearchParams(window.location.search).get("empty") !== null) setForceEmpty(true);
-    return () => window.clearInterval(t);
   }, [router]);
 
   // Polls every in-flight job every 3s until it reaches a terminal status.
@@ -348,6 +335,10 @@ export default function Dashboard() {
           <Link className="brand" href="/" aria-label="clep — home">
             <Image src="/logo.png" alt="clep" width={760} height={413} className="brand-logo" priority />
           </Link>
+          <nav className="nav-links">
+            <span className="nav-link-active">Convert</span>
+            <Link href="/dashboard/upgrade">Pricing</Link>
+          </nav>
           <div className="nav-actions">
             <span className="status-pill compact" title={`${left} conversions left this month`}>
               ⚡{left}
@@ -379,25 +370,47 @@ export default function Dashboard() {
         <div className="dash-grid">
           {/* MAIN */}
           <div className="dash-main">
-            <h1 className="dash-title">Convert a document</h1>
+            <div className="dash-eyebrow">Turn documents into data</div>
+            <h1 className="dash-title">Convert a document into a structured spreadsheet</h1>
+            <p className="dash-sub">Upload your document, describe what you need, and get clean, structured data back.</p>
 
             {/* DROPZONE */}
             <div className="upload-card">
               {pendingFiles.length === 0 ? (
-                <div
-                  className={`dash-drop ${drag ? "drag" : ""}`}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => inputRef.current?.click()}
-                  onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
-                  onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
-                  onDragLeave={() => setDrag(false)}
-                  onDrop={(e) => { e.preventDefault(); setDrag(false); addFiles(e.dataTransfer.files); }}
-                >
-                  <div className="dash-drop-icon">⇪</div>
-                  <div className="dash-drop-text">Drop files, or <u>click to browse</u></div>
-                  <div className="dash-drop-sub">PDF, JPG, PNG — bank statements, invoices, receipts. Multiple files go into one batch.</div>
-                </div>
+                <>
+                  <div
+                    className={`dash-drop ${drag ? "drag" : ""}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => inputRef.current?.click()}
+                    onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+                    onDragLeave={() => setDrag(false)}
+                    onDrop={(e) => { e.preventDefault(); setDrag(false); addFiles(e.dataTransfer.files); }}
+                  >
+                    <div className="dash-drop-icon">📄</div>
+                    <div className="dash-drop-text">Drag &amp; drop files here, or <u>click to browse</u></div>
+                    <div className="dash-drop-sub">PDF, JPG, PNG — bank statements, invoices, receipts. Multiple files go into one batch.</div>
+                  </div>
+                  <div className="feature-row">
+                    <div className="feature-item">
+                      <span className="feature-icon">🔒</span>
+                      <div><strong>Secure &amp; private</strong><span>Your files are encrypted</span></div>
+                    </div>
+                    <div className="feature-item">
+                      <span className="feature-icon">⚡</span>
+                      <div><strong>Fast processing</strong><span>Get results in seconds</span></div>
+                    </div>
+                    <div className="feature-item">
+                      <span className="feature-icon">📑</span>
+                      <div><strong>Supports messy docs</strong><span>Scans, photos, multi-page</span></div>
+                    </div>
+                    <div className="feature-item">
+                      <span className="feature-icon">✓</span>
+                      <div><strong>No setup needed</strong><span>Just upload and go</span></div>
+                    </div>
+                  </div>
+                </>
               ) : (
                 <div className="pending-files">
                   {pendingFiles.map((f, i) => (
@@ -419,21 +432,6 @@ export default function Dashboard() {
 
               {pendingFiles.length > 0 && (
                 <>
-                  <div className="format-block">
-                    <div className="format-head">
-                      <span>Output format</span>
-                    </div>
-                    <SegmentedTabs
-                      options={[
-                        { key: "Excel", label: "Excel" },
-                        { key: "CSV", label: "CSV" },
-                        { key: "JSON", label: "JSON" }
-                      ]}
-                      value={format}
-                      onChange={setFormat}
-                    />
-                  </div>
-
                   {/* CHAT — describe a custom output schema before starting.
                       First message lazily creates the job (see
                       ensureStagedJob) so the backend has file content to
@@ -447,63 +445,69 @@ export default function Dashboard() {
                         {chatBusy && <div className="chat-bubble assistant chat-typing">…</div>}
                       </div>
                     )}
-                    <div className="note-row">
-                      <span className="note-icon" aria-hidden>✎</span>
+                    <div className="chat-input-row">
+                      <span className="chat-input-icon" aria-hidden>✨</span>
                       <input
-                        className="ghost-input"
+                        className="chat-input"
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && sendChat()}
-                        placeholder={chatMessages.length > 0 ? "Ask for another change…" : GHOSTS[gi]}
+                        placeholder={chatMessages.length > 0 ? "Ask for another change…" : "Describe what you want to extract (optional)"}
                         aria-label="Describe how you want your spreadsheet formatted."
                         disabled={chatBusy}
                       />
                       <button
-                        className="attach-btn"
-                        onClick={() => sampleRef.current?.click()}
-                        title="Upload a sample sheet — we'll copy its format"
-                        aria-label="Upload a sample sheet to copy its format"
+                        className="chat-send-btn"
+                        onClick={sendChat}
+                        disabled={chatBusy || !chatInput.trim()}
+                        aria-label="Send"
                       >
-                        📎
+                        →
                       </button>
-                      <input
-                        ref={sampleRef}
-                        type="file"
-                        accept=".xlsx,.xls,.csv"
-                        className="hidden-input"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          e.target.value = "";
-                          if (!f) return;
-                          setSampleName(f.name);
-                          showToast(`“${f.name}” saved — next uploads will copy its format`);
-                        }}
-                      />
-                      {chatInput.trim() && (
-                        <button className="note-send" onClick={sendChat} disabled={chatBusy}>Send</button>
-                      )}
                     </div>
                     <div className="sugg-row">
                       {SUGGEST.map((s) => (
                         <button key={s} onClick={() => setChatInput(s)}>+ {s}</button>
                       ))}
                     </div>
-                    {sampleName && (
-                      <div className="attached-col">
-                        <div className="format-attached">
-                          <span>📎 {sampleName}</span>
-                          <button onClick={() => { setSampleName(null); showToast("Sample format removed"); }} aria-label="Remove sample format">×</button>
-                        </div>
-                      </div>
-                    )}
+                  </div>
+
+                  <div className="format-block">
+                    <div className="format-head">
+                      <span>Output format</span>
+                    </div>
+                    <div className="format-cards">
+                      <button className={`format-card ${format === "Excel" ? "active" : ""}`} onClick={() => setFormat("Excel")}>
+                        <span className="format-card-icon">📗</span>
+                        <strong>Excel (.xlsx)</strong>
+                        <span>Best for analysis</span>
+                      </button>
+                      <button className={`format-card ${format === "CSV" ? "active" : ""}`} onClick={() => setFormat("CSV")}>
+                        <span className="format-card-icon">📄</span>
+                        <strong>CSV (.csv)</strong>
+                        <span>Universal format</span>
+                      </button>
+                      <button className={`format-card ${format === "JSON" ? "active" : ""}`} onClick={() => setFormat("JSON")}>
+                        <span className="format-card-icon">{"{ }"}</span>
+                        <strong>JSON (.json)</strong>
+                        <span>For developers</span>
+                      </button>
+                      <button className="format-card disabled" disabled title="Coming soon">
+                        <span className="format-card-icon">📊</span>
+                        <strong>Google Sheets</strong>
+                        <span className="format-card-soon">Soon</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="stage-actions">
-                    <button className="btn btn-ghost btn-sm" onClick={resetStaging} disabled={startBusy}>
+                    <button className="link-btn" onClick={resetStaging} disabled={startBusy}>
                       Cancel
                     </button>
-                    <button className="btn btn-lime btn-sm" onClick={handleStart} disabled={startBusy}>
-                      {startBusy ? "Starting…" : `Start${pendingFiles.length > 1 ? ` (${pendingFiles.length} files)` : ""}`}
+                    <button className="convert-btn" onClick={handleStart} disabled={startBusy}>
+                      {startBusy
+                        ? "Starting…"
+                        : `Convert Document${pendingFiles.length > 1 ? ` (${pendingFiles.length} files)` : ""} →`}
                     </button>
                   </div>
                 </>
@@ -519,7 +523,7 @@ export default function Dashboard() {
             />
 
             {/* RECENT */}
-            <div className="recent-head">
+            <div className="recent-head" id="recent-list">
               <h2>Recent</h2>
             </div>
 
@@ -591,18 +595,17 @@ export default function Dashboard() {
             <div className="usage-card">
               <div className="usage-top">
                 <strong>{plan ? `${plan.planName} plan` : "Loading…"}</strong>
-                <span>{used} / {limit} used</span>
+                <button className="link-btn" onClick={() => showToast("Billing management ships soon")}>Manage</button>
               </div>
               <div className="progress"><div style={{ width: `${limit > 0 ? (used / limit) * 100 : 0}%` }} /></div>
-              <p className="usage-note">{left} page{left === 1 ? "" : "s"} left this month.</p>
+              <p className="usage-note">{used} / {limit} pages used · {left} left this month.</p>
               <button
                 className="btn btn-lime btn-sm"
                 style={{ width: "100%", justifyContent: "center" }}
                 onClick={() => router.push("/dashboard/upgrade")}
               >
-                Upgrade
+                Upgrade plan
               </button>
-              <button className="link-btn" onClick={() => showToast("Billing management ships soon")}>Manage billing</button>
             </div>
 
             <div className="preset-card">
@@ -629,6 +632,28 @@ export default function Dashboard() {
                 </div>
               )}
               <p className="preset-note">Click a format to apply it to your next upload — skips the customize step.</p>
+            </div>
+
+            <div className="preset-card">
+              <div className="sidebar-card-head">
+                <h3>Recent documents</h3>
+                {convs.length > 3 && <a className="link-btn" href="#recent-list">See all</a>}
+              </div>
+              {convs.length === 0 ? (
+                <p className="preset-note">Nothing yet — your converted files will show up here.</p>
+              ) : (
+                <div className="recent-mini-list">
+                  {convs.slice(0, 3).map((c) => (
+                    <a className="recent-mini-item" href="#recent-list" key={c.id}>
+                      <span className={`file-icon ${TYPE_TINT[c.type] ?? ""}`}>{TYPE_ICON[c.type] ?? "📄"}</span>
+                      <div className="recent-mini-meta">
+                        <strong>{short(c.name)}</strong>
+                        <span>{c.type} • {c.out} • {c.date}</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           </aside>
         </div>
