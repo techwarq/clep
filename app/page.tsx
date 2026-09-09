@@ -371,7 +371,7 @@ export default function Page() {
             {/* TEMP: live-payment/webhook smoke test — remove once verified, see billing setup */}
             <div className="price">
               <h3>Test</h3>
-              <div className="amount">$0.60<span>/mo</span></div>
+              <div className="amount">$1<span>/mo</span></div>
               <ul>
                 <li>10 pages / month</li>
                 <li>Up to 10 pages / document</li>
