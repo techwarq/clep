@@ -368,19 +368,6 @@ export default function Page() {
                 Contact us
               </button>
             </div>
-            {/* TEMP: live-payment/webhook smoke test — remove once verified, see billing setup */}
-            <div className="price">
-              <h3>Test</h3>
-              <div className="amount">$1<span>/mo</span></div>
-              <ul>
-                <li>10 pages / month</li>
-                <li>Up to 10 pages / document</li>
-                <li>For verifying checkout end-to-end</li>
-              </ul>
-              <button className="btn btn-ghost" disabled={checkoutBusy === "Test"} onClick={() => upgrade("Test")}>
-                {checkoutBusy === "Test" ? "Redirecting…" : "Subscribe"}
-              </button>
-            </div>
           </div>
         </Reveal>
 

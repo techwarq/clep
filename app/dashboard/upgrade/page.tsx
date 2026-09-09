@@ -13,9 +13,6 @@ interface PlanCard {
   features: string[];
   featured?: boolean;
   contactOnly?: boolean;
-  // TEMP: remove once the live checkout/webhook loop no longer needs a
-  // cheap plan to verify against — see billing setup notes.
-  temp?: boolean;
 }
 
 const PLANS: PlanCard[] = [
@@ -52,13 +49,6 @@ const PLANS: PlanCard[] = [
     period: "/mo",
     contactOnly: true,
     features: ["10,000 pages / month", "Up to 500 pages / document", "API access", "Webhooks", "Team workspace", "Advanced exports", "Priority processing"],
-  },
-  {
-    name: "Test",
-    price: "$1",
-    period: "/mo",
-    temp: true,
-    features: ["10 pages / month", "Up to 10 pages / document", "For verifying checkout end-to-end"],
   },
 ];
 
