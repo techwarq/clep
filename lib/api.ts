@@ -162,7 +162,7 @@ export async function listJobs(): Promise<JobListItem[]> {
   return body.jobs;
 }
 
-export async function downloadExport(jobId: string, format: "xlsx" | "csv"): Promise<Blob> {
+export async function downloadExport(jobId: string, format: "xlsx" | "csv" | "json"): Promise<Blob> {
   const res = await authedFetch(`/jobs/${jobId}/export?format=${format}`);
   return res.blob();
 }

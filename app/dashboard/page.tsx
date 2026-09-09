@@ -259,15 +259,14 @@ export default function Dashboard() {
   };
 
   const downloadRow = async (c: Conv) => {
-    // "QuickBooks" has no dedicated export format on the backend yet —
-    // falls back to xlsx, same as "Excel".
-    const fmt = c.out === "CSV" ? "csv" : "xlsx";
+    const fmt = c.out === "CSV" ? "csv" : c.out === "JSON" ? "json" : "xlsx";
+    const ext = fmt === "csv" ? ".csv" : fmt === "json" ? ".json" : ".xlsx";
     try {
       const blob = await downloadExport(c.id, fmt);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = c.name.replace(/\.[^.]+$/, "") + (fmt === "csv" ? ".csv" : ".xlsx");
+      a.download = c.name.replace(/\.[^.]+$/, "") + ext;
       a.click();
       URL.revokeObjectURL(url);
       showToast(`${fmt.toUpperCase()} downloaded`);
@@ -379,7 +378,7 @@ export default function Dashboard() {
                   options={[
                     { key: "Excel", label: "Excel" },
                     { key: "CSV", label: "CSV" },
-                    { key: "QuickBooks", label: "QuickBooks" }
+                    { key: "JSON", label: "JSON" }
                   ]}
                   value={format}
                   onChange={setFormat}
