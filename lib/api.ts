@@ -166,3 +166,28 @@ export async function downloadExport(jobId: string, format: "xlsx" | "csv"): Pro
   const res = await authedFetch(`/jobs/${jobId}/export?format=${format}`);
   return res.blob();
 }
+
+// ---- Billing ----
+
+export interface PlanInfo {
+  email: string;
+  name: string;
+  planName: string;
+  pagesRemaining: number;
+  pageQuota: number;
+  maxPagesPerDoc: number;
+}
+
+export async function getMe(): Promise<PlanInfo> {
+  const res = await authedFetch("/billing/me");
+  return res.json();
+}
+
+export async function startCheckout(planName: string): Promise<{ checkoutUrl: string }> {
+  const res = await authedFetch("/billing/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ planName }),
+  });
+  return res.json();
+}

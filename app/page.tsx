@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import DemoWidget from "../components/DemoWidget";
 import Reveal from "../components/Reveal";
+import { getToken, startCheckout } from "../lib/api";
 
 const DOES_REST = [
   "Finds the structure",
@@ -47,8 +49,10 @@ const WHY_ROWS: [string, string][] = [
 ];
 
 export default function Page() {
+  const router = useRouter();
   const [toast, setToast] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [checkoutBusy, setCheckoutBusy] = useState<string | null>(null);
 
   const showToast = (m: string) => {
     setToast(m);
@@ -63,6 +67,24 @@ export default function Page() {
   const navGo = (id: string) => {
     setMenuOpen(false);
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Logged-out visitors go create an account first — /signup carries the
+  // plan through and fires checkout right after (see AuthCard.tsx) rather
+  // than dropping them on the dashboard mid-upgrade.
+  const upgrade = async (planName: string) => {
+    if (!getToken()) {
+      router.push(`/signup?plan=${encodeURIComponent(planName)}`);
+      return;
+    }
+    setCheckoutBusy(planName);
+    try {
+      const { checkoutUrl } = await startCheckout(planName);
+      window.location.href = checkoutUrl;
+    } catch (err) {
+      setCheckoutBusy(null);
+      showToast(err instanceof Error ? err.message : "Couldn't start checkout");
+    }
   };
 
   return (
@@ -310,8 +332,8 @@ export default function Page() {
                 <li>Batch uploads</li>
                 <li>Priority processing</li>
               </ul>
-              <button className="btn btn-ghost" onClick={() => showToast("Starter trial — checkout opens at launch")}>
-                Start free trial
+              <button className="btn btn-ghost" disabled={checkoutBusy === "Starter"} onClick={() => upgrade("Starter")}>
+                {checkoutBusy === "Starter" ? "Redirecting…" : "Subscribe"}
               </button>
             </div>
             <div className="price featured">
@@ -326,8 +348,8 @@ export default function Page() {
                 <li>Google Sheets</li>
                 <li>Shareable results</li>
               </ul>
-              <button className="btn btn-lime" onClick={() => showToast("Pro trial — checkout opens at launch")}>
-                Start free trial
+              <button className="btn btn-lime" disabled={checkoutBusy === "Pro"} onClick={() => upgrade("Pro")}>
+                {checkoutBusy === "Pro" ? "Redirecting…" : "Subscribe"}
               </button>
             </div>
             <div className="price">

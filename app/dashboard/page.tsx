@@ -10,6 +10,7 @@ import {
   createJob,
   downloadExport,
   getJobStatus,
+  getMe,
   getToken,
   getUser,
   listJobs,
@@ -18,6 +19,7 @@ import {
   uploadToPresignedUrl,
   type JobDetail,
   type JobListItem,
+  type PlanInfo,
   type StoredUser,
 } from "../../lib/api";
 
@@ -159,11 +161,12 @@ export default function Dashboard() {
   const [drag, setDrag] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [plan, setPlan] = useState<PlanInfo | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const used = 23;
-  const limit = 50;
-  const left = limit - used;
+  const limit = plan?.pageQuota ?? 0;
+  const left = plan?.pagesRemaining ?? 0;
+  const used = limit - left;
 
   const showToast = (m: string) => {
     setToast(m);
@@ -180,6 +183,9 @@ export default function Dashboard() {
       return;
     }
     setUser(getUser());
+    getMe()
+      .then(setPlan)
+      .catch((err) => showToast(err instanceof Error ? err.message : "Couldn't load your plan"));
     listJobs()
       .then((jobs) => setConvs(jobs.map(convFromListItem)))
       .catch((err) => showToast(err instanceof Error ? err.message : "Couldn't load your jobs"));
@@ -294,7 +300,7 @@ export default function Dashboard() {
                   <div className="avatar-menu">
                     <div className="avatar-head">
                       <strong>{user?.email ?? "Account"}</strong>
-                      <span>Starter plan</span>
+                      <span>{plan ? `${plan.planName} plan` : "Loading…"}</span>
                     </div>
                     <button onClick={() => { setMenuOpen(false); showToast("Settings open at launch"); }}>Settings</button>
                     <button onClick={() => { setMenuOpen(false); showToast("Billing opens at launch"); }}>Billing</button>
@@ -476,15 +482,19 @@ export default function Dashboard() {
           <aside className="dash-side">
             <div className="usage-card">
               <div className="usage-top">
-                <strong>Starter plan</strong>
+                <strong>{plan ? `${plan.planName} plan` : "Loading…"}</strong>
                 <span>{used} / {limit} used</span>
               </div>
-              <div className="progress"><div style={{ width: `${(used / limit) * 100}%` }} /></div>
-              <p className="usage-note">{left} conversions left this month.</p>
-              <button className="btn btn-lime btn-sm" style={{ width: "100%", justifyContent: "center" }} onClick={() => showToast("Upgrade opens at launch")}>
+              <div className="progress"><div style={{ width: `${limit > 0 ? (used / limit) * 100 : 0}%` }} /></div>
+              <p className="usage-note">{left} page{left === 1 ? "" : "s"} left this month.</p>
+              <button
+                className="btn btn-lime btn-sm"
+                style={{ width: "100%", justifyContent: "center" }}
+                onClick={() => router.push("/#pricing")}
+              >
                 Upgrade
               </button>
-              <button className="link-btn" onClick={() => showToast("Billing opens at launch")}>Manage billing</button>
+              <button className="link-btn" onClick={() => showToast("Billing management ships soon")}>Manage billing</button>
             </div>
 
             <div className="preset-card">

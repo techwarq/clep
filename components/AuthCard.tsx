@@ -3,11 +3,13 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { login, setToken, setUser, signup } from "../lib/api";
+import { useRouter, useSearchParams } from "next/navigation";
+import { login, setToken, setUser, signup, startCheckout } from "../lib/api";
 
 export default function AuthCard({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const plan = searchParams.get("plan");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,6 +37,26 @@ export default function AuthCard({ mode }: { mode: "login" | "signup" }) {
         : await login(trimmedEmail, password);
       setToken(token);
       setUser({ email: trimmedEmail, name: resolvedName });
+
+      // Arrived here via a pricing button (e.g. /signup?plan=Pro) — finish
+      // what they came for instead of dropping them on the dashboard and
+      // making them find the pricing section again. Account creation has
+      // already succeeded at this point, so a checkout failure here falls
+      // back to the dashboard rather than reporting it as a signup error.
+      if (plan) {
+        try {
+          setToast("Redirecting to checkout…");
+          const { checkoutUrl } = await startCheckout(plan);
+          window.location.href = checkoutUrl;
+          return;
+        } catch (checkoutErr) {
+          setBusy(false);
+          setToast(checkoutErr instanceof Error ? checkoutErr.message : "Couldn't start checkout");
+          router.push("/dashboard");
+          return;
+        }
+      }
+
       setToast(isSignup ? "Account created — welcome to clep!" : "Welcome back!");
       window.setTimeout(() => router.push("/dashboard"), 900);
     } catch (err) {
@@ -53,7 +75,11 @@ export default function AuthCard({ mode }: { mode: "login" | "signup" }) {
           <h1>{isSignup ? "Create your account" : "Welcome back"}</h1>
           <p className="auth-sub">
             {isSignup ? (
-              <>Free plan · 3 conversions a month · <u>No credit card needed</u></>
+              plan ? (
+                <>Create your account to continue to {plan} checkout.</>
+              ) : (
+                <>Free plan · 50 pages a month · <u>No credit card needed</u></>
+              )
             ) : (
               <>Pick up right where you left off.</>
             )}
