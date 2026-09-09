@@ -17,6 +17,7 @@ import {
   sendChatMessage,
   startExtract,
   uploadToPresignedUrl,
+  type ChatMessage,
   type JobDetail,
   type JobListItem,
   type PlanInfo,
@@ -160,9 +161,7 @@ export default function Dashboard() {
   const [forceEmpty, setForceEmpty] = useState(false);
   const [presets, setPresets] = useState<string[]>(PRESETS);
   const [activePreset, setActivePreset] = useState<string | null>(null);
-  const [note, setNote] = useState("");
   const [format, setFormat] = useState("Excel");
-  const [attached, setAttached] = useState<string | null>(null);
   const [sampleName, setSampleName] = useState<string | null>(null);
   const sampleRef = useRef<HTMLInputElement>(null);
   const [gi, setGi] = useState(0);
@@ -171,6 +170,18 @@ export default function Dashboard() {
   const [toast, setToast] = useState<string | null>(null);
   const [plan, setPlan] = useState<PlanInfo | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Staging: files are selected/uploaded first, extraction only starts once
+  // the user hits "Start" — lets multiple files go into one batch, and
+  // makes the /chat customization step (see lib/api.ts's sendChatMessage)
+  // an actual back-and-forth instead of a single note fired silently right
+  // before extract.
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [stagedJobId, setStagedJobId] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatBusy, setChatBusy] = useState(false);
+  const [startBusy, setStartBusy] = useState(false);
 
   const limit = plan?.pageQuota ?? 0;
   const left = plan?.pagesRemaining ?? 0;
@@ -224,45 +235,89 @@ export default function Dashboard() {
     return () => window.clearInterval(t);
   }, []);
 
-  const attachNote = () => {
-    const v = note.trim();
-    if (!v) return;
-    setAttached(v);
-    setNote("");
-    showToast("Format note saved — applies to your next upload");
+  const resetStaging = () => {
+    setPendingFiles([]);
+    setStagedJobId(null);
+    setChatMessages([]);
+    setChatInput("");
   };
 
-  const addUpload = async (f: File | null) => {
-    if (!f) return;
-    const chosenFormat = format;
-    const chosenNote = attached;
-    let jobId: string | null = null;
+  // Files are picked/dropped without hitting the backend at all — just
+  // collected locally so more can be added before anything is created.
+  // Locked once a job exists (stagedJobId set): the backend has no "add a
+  // file to an existing job" endpoint, so a job's file list is fixed at
+  // creation.
+  const addFiles = (incoming: FileList | File[]) => {
+    if (stagedJobId) return;
+    const files = Array.from(incoming);
+    if (files.length === 0) return;
+    setPendingFiles((prev) => [...prev, ...files]);
+  };
 
+  const removeFile = (index: number) => {
+    if (stagedJobId) return;
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Creates the job and uploads every staged file exactly once — both
+  // "send a chat message" and "click Start" need the job to exist first
+  // (chat samples the uploaded file's content), so both call this and it
+  // no-ops after the first successful call.
+  const ensureStagedJob = async (): Promise<string> => {
+    if (stagedJobId) return stagedJobId;
+    const created = await createJob(
+      pendingFiles.map((f) => ({ name: f.name, contentType: f.type || "application/pdf" })),
+    );
+    await Promise.all(
+      created.uploads.map((u) => uploadToPresignedUrl(u.uploadUrl, pendingFiles[u.fileIndex])),
+    );
+    setStagedJobId(created.jobId);
+    return created.jobId;
+  };
+
+  const sendChat = async () => {
+    const message = chatInput.trim();
+    if (!message || chatBusy) return;
+    setChatBusy(true);
+    setChatMessages((m) => [...m, { role: "user", content: message }]);
+    setChatInput("");
     try {
-      const created = await createJob([{ name: f.name, contentType: f.type || "application/pdf" }]);
-      jobId = created.jobId;
-      setConvs((cs) => [
-        { id: jobId!, name: f.name, type: "Detecting…", out: chosenFormat, status: "processing", date: "just now", progress: 5 },
-        ...cs
-      ]);
-
-      await uploadToPresignedUrl(created.uploads[0].uploadUrl, f);
-      // A format note describes a custom schema — sent as one /chat message
-      // before locking it in with /extract, rather than the full
-      // preview/refine loop the backend supports (no UI for that here yet).
-      if (chosenNote) await sendChatMessage(jobId, chosenNote);
-      await startExtract(jobId);
-
-      showToast(
-        `${short(f.name)} — processing started${chosenNote ? " with your custom format" : ""}${sampleName ? ` · matched to ${short(sampleName)}` : ""}`
-      );
+      const jobId = await ensureStagedJob();
+      const job = await sendChatMessage(jobId, message);
+      setChatMessages(job.chat ?? []);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Upload failed";
-      if (jobId) {
-        const failedId = jobId;
-        setConvs((cs) => cs.map((r) => (r.id === failedId ? { ...r, status: "failed", error: message } : r)));
-      }
-      showToast(message);
+      showToast(err instanceof Error ? err.message : "Couldn't send that — try again");
+    } finally {
+      setChatBusy(false);
+    }
+  };
+
+  const handleStart = async () => {
+    if (pendingFiles.length === 0 || startBusy) return;
+    const names = pendingFiles.map((f) => f.name);
+    const chosenFormat = format;
+    setStartBusy(true);
+    try {
+      const jobId = await ensureStagedJob();
+      await startExtract(jobId);
+      setConvs((cs) => [
+        {
+          id: jobId,
+          name: names[0] + (names.length > 1 ? ` +${names.length - 1} more` : ""),
+          type: "Detecting…",
+          out: chosenFormat,
+          status: "processing",
+          date: "just now",
+          progress: 5,
+        },
+        ...cs,
+      ]);
+      showToast(`${names.length > 1 ? `${names.length} files` : short(names[0])} — processing started`);
+      resetStaging();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Couldn't start processing");
+    } finally {
+      setStartBusy(false);
     }
   };
 
@@ -328,98 +383,139 @@ export default function Dashboard() {
 
             {/* DROPZONE */}
             <div className="upload-card">
-              <div
-                className={`dash-drop ${drag ? "drag" : ""}`}
-                role="button"
-                tabIndex={0}
-                onClick={() => inputRef.current?.click()}
-                onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
-                onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
-                onDragLeave={() => setDrag(false)}
-                onDrop={(e) => { e.preventDefault(); setDrag(false); addUpload(e.dataTransfer.files?.[0] ?? null); }}
-              >
-                <div className="dash-drop-icon">⇪</div>
-                <div className="dash-drop-text">Drop a file, or <u>click to browse</u></div>
-                <div className="dash-drop-sub">PDF, JPG, PNG — bank statements, invoices, receipts</div>
-              </div>
-              <div className="note-row">
-                <span className="note-icon" aria-hidden>✎</span>
-                <input
-                  className="ghost-input"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && attachNote()}
-                  placeholder={GHOSTS[gi]}
-                  aria-label="Describe how you want your spreadsheet formatted."
-                />
-                <button
-                  className="attach-btn"
-                  onClick={() => sampleRef.current?.click()}
-                  title="Upload a sample sheet — we'll copy its format"
-                  aria-label="Upload a sample sheet to copy its format"
+              {pendingFiles.length === 0 ? (
+                <div
+                  className={`dash-drop ${drag ? "drag" : ""}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => inputRef.current?.click()}
+                  onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+                  onDragLeave={() => setDrag(false)}
+                  onDrop={(e) => { e.preventDefault(); setDrag(false); addFiles(e.dataTransfer.files); }}
                 >
-                  📎
-                </button>
-                <input
-                  ref={sampleRef}
-                  type="file"
-                  accept=".xlsx,.xls,.csv"
-                  className="hidden-input"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    e.target.value = "";
-                    if (!f) return;
-                    setSampleName(f.name);
-                    showToast(`“${f.name}” saved — next uploads will copy its format`);
-                  }}
-                />
-                {note.trim() && (
-                  <button className="note-send" onClick={attachNote}>Attach</button>
-                )}
-              </div>
-              <div className="format-block">
-                <div className="format-head">
-                  <span>Output format</span>
-                  {attached && <span className="format-on">✎ custom note on</span>}
+                  <div className="dash-drop-icon">⇪</div>
+                  <div className="dash-drop-text">Drop files, or <u>click to browse</u></div>
+                  <div className="dash-drop-sub">PDF, JPG, PNG — bank statements, invoices, receipts. Multiple files go into one batch.</div>
                 </div>
-                <SegmentedTabs
-                  options={[
-                    { key: "Excel", label: "Excel" },
-                    { key: "CSV", label: "CSV" },
-                    { key: "JSON", label: "JSON" }
-                  ]}
-                  value={format}
-                  onChange={setFormat}
-                />
-                <div className="sugg-row">
-                  {SUGGEST.map((s) => (
-                    <button key={s} onClick={() => setNote(s)}>+ {s}</button>
+              ) : (
+                <div className="pending-files">
+                  {pendingFiles.map((f, i) => (
+                    <div className="pending-file-row" key={`${f.name}-${i}`}>
+                      <span className="file-icon">📄</span>
+                      <span className="pending-file-name">{f.name}</span>
+                      {!stagedJobId && (
+                        <button className="mini-btn ghost" onClick={() => removeFile(i)} aria-label={`Remove ${f.name}`}>×</button>
+                      )}
+                    </div>
                   ))}
+                  {!stagedJobId && (
+                    <button className="mini-btn ghost" onClick={() => inputRef.current?.click()}>
+                      + Add another file
+                    </button>
+                  )}
                 </div>
-                {(attached || sampleName) && (
-                  <div className="attached-col">
-                    {attached && (
-                      <div className="format-attached">
-                        <span>✎ “{attached}”</span>
-                        <button onClick={() => { setAttached(null); showToast("Format note removed"); }} aria-label="Remove format note">×</button>
+              )}
+
+              {pendingFiles.length > 0 && (
+                <>
+                  <div className="format-block">
+                    <div className="format-head">
+                      <span>Output format</span>
+                    </div>
+                    <SegmentedTabs
+                      options={[
+                        { key: "Excel", label: "Excel" },
+                        { key: "CSV", label: "CSV" },
+                        { key: "JSON", label: "JSON" }
+                      ]}
+                      value={format}
+                      onChange={setFormat}
+                    />
+                  </div>
+
+                  {/* CHAT — describe a custom output schema before starting.
+                      First message lazily creates the job (see
+                      ensureStagedJob) so the backend has file content to
+                      sample against. */}
+                  <div className="chat-box">
+                    {chatMessages.length > 0 && (
+                      <div className="chat-log">
+                        {chatMessages.map((m, i) => (
+                          <div className={`chat-bubble ${m.role}`} key={i}>{m.content}</div>
+                        ))}
+                        {chatBusy && <div className="chat-bubble assistant chat-typing">…</div>}
                       </div>
                     )}
+                    <div className="note-row">
+                      <span className="note-icon" aria-hidden>✎</span>
+                      <input
+                        className="ghost-input"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && sendChat()}
+                        placeholder={chatMessages.length > 0 ? "Ask for another change…" : GHOSTS[gi]}
+                        aria-label="Describe how you want your spreadsheet formatted."
+                        disabled={chatBusy}
+                      />
+                      <button
+                        className="attach-btn"
+                        onClick={() => sampleRef.current?.click()}
+                        title="Upload a sample sheet — we'll copy its format"
+                        aria-label="Upload a sample sheet to copy its format"
+                      >
+                        📎
+                      </button>
+                      <input
+                        ref={sampleRef}
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        className="hidden-input"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          e.target.value = "";
+                          if (!f) return;
+                          setSampleName(f.name);
+                          showToast(`“${f.name}” saved — next uploads will copy its format`);
+                        }}
+                      />
+                      {chatInput.trim() && (
+                        <button className="note-send" onClick={sendChat} disabled={chatBusy}>Send</button>
+                      )}
+                    </div>
+                    <div className="sugg-row">
+                      {SUGGEST.map((s) => (
+                        <button key={s} onClick={() => setChatInput(s)}>+ {s}</button>
+                      ))}
+                    </div>
                     {sampleName && (
-                      <div className="format-attached">
-                        <span>📎 {sampleName}</span>
-                        <button onClick={() => { setSampleName(null); showToast("Sample format removed"); }} aria-label="Remove sample format">×</button>
+                      <div className="attached-col">
+                        <div className="format-attached">
+                          <span>📎 {sampleName}</span>
+                          <button onClick={() => { setSampleName(null); showToast("Sample format removed"); }} aria-label="Remove sample format">×</button>
+                        </div>
                       </div>
                     )}
                   </div>
-                )}
-              </div>
+
+                  <div className="stage-actions">
+                    <button className="btn btn-ghost btn-sm" onClick={resetStaging} disabled={startBusy}>
+                      Cancel
+                    </button>
+                    <button className="btn btn-lime btn-sm" onClick={handleStart} disabled={startBusy}>
+                      {startBusy ? "Starting…" : `Start${pendingFiles.length > 1 ? ` (${pendingFiles.length} files)` : ""}`}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
             <input
               ref={inputRef}
               className="hidden-input"
               type="file"
+              multiple
               accept=".pdf,.png,.jpg,.jpeg,.heic"
-              onChange={(e) => { addUpload(e.target.files?.[0] ?? null); e.target.value = ""; }}
+              onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }}
             />
 
             {/* RECENT */}

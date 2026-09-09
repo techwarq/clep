@@ -82,6 +82,11 @@ export interface JobSummary {
   needsReview: number;
 }
 
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export interface JobDetail {
   id: string;
   status: JobStatus;
@@ -96,6 +101,9 @@ export interface JobDetail {
   error?: string;
   createdAt: string;
   updatedAt: string;
+  // Only present once mode has flipped to "custom" via POST /chat.
+  chat?: ChatMessage[];
+  schemaStatus?: "drafting" | "confirmed";
 }
 
 export type JobListItem = Pick<JobDetail, "id" | "status" | "summary" | "createdAt" | "updatedAt"> & {

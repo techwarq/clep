@@ -568,6 +568,24 @@ footer { border-top: 1px solid var(--line-soft); margin-top: 20px; padding: 26px
   border: 1px solid var(--line); background: #fff; font-size: 14px; line-height: 1; color: var(--muted);
 }
 .format-attached button:hover { color: var(--text); border-color: var(--text); }
+
+/* staged files + chat, before Start */
+.pending-files { padding: 18px 20px; display: grid; gap: 8px; }
+.pending-file-row {
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: #fbfcf9;
+}
+.pending-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 500; }
+.chat-box { border-top: 1px solid var(--line-soft); }
+.chat-log { display: grid; gap: 8px; padding: 16px 20px 0; max-height: 240px; overflow-y: auto; }
+.chat-bubble {
+  max-width: 80%; padding: 9px 14px; border-radius: 14px; font-size: 13.5px; line-height: 1.45;
+}
+.chat-bubble.user { justify-self: end; background: var(--lime); color: var(--lime-ink); border-bottom-right-radius: 4px; }
+.chat-bubble.assistant { justify-self: start; background: #eef1ec; color: var(--text); border-bottom-left-radius: 4px; }
+.chat-typing { color: var(--muted-2); font-family: var(--mono); }
+.stage-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 20px 20px; border-top: 1px solid var(--line-soft); }
+
 .dash-drop-icon {
   width: 56px; height: 56px; border-radius: 18px; margin: 0 auto 16px;
   background: rgba(200,245,66,0.45); border: 1px solid rgba(101,163,13,0.35);
