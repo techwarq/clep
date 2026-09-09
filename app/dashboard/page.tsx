@@ -490,7 +490,7 @@ export default function Dashboard() {
               <button
                 className="btn btn-lime btn-sm"
                 style={{ width: "100%", justifyContent: "center" }}
-                onClick={() => router.push("/#pricing")}
+                onClick={() => router.push("/dashboard/upgrade")}
               >
                 Upgrade
               </button>
