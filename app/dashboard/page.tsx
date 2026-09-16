@@ -5,22 +5,22 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  clearSession,
+  clearClepSession,
+  clepMe,
   createJob,
   downloadExport,
+  getClepToken,
   getJobStatus,
   getMe,
-  getToken,
-  getUser,
   listJobs,
   sendChatMessage,
   startExtract,
   uploadToPresignedUrl,
   type ChatMessage,
+  type ClepUser,
   type JobDetail,
   type JobListItem,
   type PlanInfo,
-  type StoredUser,
 } from "../../lib/api";
 
 type Status = "done" | "review" | "processing" | "failed" | "empty";
@@ -154,7 +154,7 @@ export default function Dashboard() {
   const router = useRouter();
   const [view, setView] = useState<"convert" | "history" | "formats" | "api">("convert");
 
-  const [user, setUser] = useState<StoredUser | null>(null);
+  const [user, setUser] = useState<ClepUser | null>(null);
   const [plan, setPlan] = useState<PlanInfo | null>(null);
   const [convs, setConvs] = useState<Conv[]>([]);
   const convsRef = useRef<Conv[]>([]);
@@ -195,11 +195,13 @@ export default function Dashboard() {
   }, [convs]);
 
   useEffect(() => {
-    if (!getToken()) {
+    if (!getClepToken()) {
       router.replace("/login");
       return;
     }
-    setUser(getUser());
+    clepMe()
+      .then(setUser)
+      .catch(() => router.replace("/login"));
     getMe()
       .then(setPlan)
       .catch((err) => showToast(err instanceof Error ? err.message : "Couldn't load your plan"));
@@ -341,7 +343,7 @@ export default function Dashboard() {
   };
 
   const logout = () => {
-    clearSession();
+    clearClepSession();
     window.location.href = "/login";
   };
 
@@ -397,7 +399,7 @@ export default function Dashboard() {
 
       <main className="wrap dash">
         {view === "convert" && (
-          <div className="dash-grid">
+          <div className="dash-grid" data-clep="dashboard-convert">
             <div className="dash-main">
               <div className="eyebrow">Turn documents into data</div>
               <h1 className="dash-title">Convert a document<br />into a structured spreadsheet</h1>
@@ -694,16 +696,44 @@ export default function Dashboard() {
         {view === "api" && (
           <div className="dash-narrow">
             <div className="eyebrow">API</div>
-            <h1 className="dash-title">Extract via API</h1>
-            <p className="dash-sub">Send documents programmatically. Same extraction + verification engine.</p>
+            <h1 className="dash-title">Your API key</h1>
+            <p className="dash-sub">Paste this into CLEP_API_KEY — the Claude Code plugin uses it to talk to the platform.</p>
             <div className="api-card">
-              {/* No public API-key endpoint exists on the backend yet (auth
-                  is JWT-based, scoped to this dashboard) — showing a
-                  realistic-looking fake endpoint/key here would be
-                  fabricated data, so this states plainly that it's not
-                  live yet instead. */}
-              <p className="usage-note">Programmatic access isn't available yet — keys and docs ship at launch.</p>
-              <button className="link-btn" onClick={() => showToast("We'll email you when API access is ready")}>Notify me →</button>
+              {user ? (
+                <>
+                  <pre
+                    style={{
+                      margin: 0,
+                      fontFamily: "var(--mono)",
+                      fontSize: 13.5,
+                      background: "#0d1412",
+                      color: "#eef7d0",
+                      borderRadius: 10,
+                      padding: "12px 14px",
+                      overflowX: "auto",
+                    }}
+                  >
+                    {user.api_key}
+                  </pre>
+                  <button
+                    className="btn btn-lime btn-sm"
+                    style={{ width: "fit-content" }}
+                    onClick={() => {
+                      navigator.clipboard?.writeText(user.api_key).catch(() => {});
+                      showToast("API key copied");
+                    }}
+                  >
+                    Copy key
+                  </button>
+                  <p className="usage-note">
+                    export CLEP_API_KEY={user.api_key}
+                    <br />
+                    export CLEP_API_URL={process.env.NEXT_PUBLIC_CLEP_API_URL}
+                  </p>
+                </>
+              ) : (
+                <p className="usage-note">Loading…</p>
+              )}
             </div>
           </div>
         )}
