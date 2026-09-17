@@ -1,85 +1,43 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useEffect, useState } from "react";
+import ClepLogo from "../components/Logo";
 import DemoWidget from "../components/DemoWidget";
 import Reveal from "../components/Reveal";
 
-const MANUAL_STEPS = [
-  "Open your app",
-  "Start a screen recording",
-  "Perform the workflow perfectly",
-  "Crop the recording",
-  "Zoom into the important UI",
-  "Add cursor movement",
-  "Add transitions",
-  "Export",
-  "Repeat for every feature",
-];
+const FEATURES = ["AI Research", "Document Upload", "AI Chat", "Checkout", "Dashboard", "Analytics"];
 
-const SOURCE_OF_TRUTH = [
-  ["◧", "Components", "What renders where"],
-  ["◐", "UI states", "Idle, loading, done"],
-  ["▢", "Buttons", "What can be clicked"],
-  ["▤", "Inputs", "What can be typed"],
-  ["⎙", "Navigation", "How views connect"],
-  ["◌", "Loading states", "What waits look like"],
-  ["✓", "Results", "What success looks like"],
-  ["✦", "Interactions", "What drives the story"],
-] as [string, string, string][];
-
-const CINEMATIC_MOTION: [string, string, string][] = [
-  ["◎", "Focus", "Find the important UI and ignore the rest."],
-  ["＋", "Zoom", "Move the camera toward the interaction."],
-  ["↔", "Pan", "Follow the feature as it changes."],
-  ["◷", "Timing", "Match motion to the interaction, not a template."],
-  ["➤", "Cursor", "Make clicks and interactions obvious."],
-  ["〜", "Transitions", "Move naturally between UI states."],
-];
-
-const USE_CASES: [string, string, string][] = [
-  ["◈", "Landing pages", "Show the feature while someone reads about it."],
-  ["▲", "Product Hunt", "Turn every feature into a visual demo."],
-  ["✕", "X / LinkedIn", "Post launches without editing video manually."],
-  ["▤", "Documentation", "Show instead of explaining."],
-  ["✦", "Changelogs", "Make every release visual."],
-];
-
-const MICRO_DEMOS = [
-  { name: "AI Research", meta: "Search → sources appear", dur: "3.8s", w: "76%" },
-  { name: "Document Upload", meta: "Drop → parsed rows", dur: "2.4s", w: "48%" },
-  { name: "AI Chat", meta: "Prompt → streaming answer", dur: "3.1s", w: "62%" },
-  { name: "Export Report", meta: "Click → MP4 + CSV", dur: "2.7s", w: "54%" },
-  { name: "Collaboration", meta: "Invite → live cursors", dur: "4.2s", w: "84%" },
-];
-
-const CAMERA_STEPS = ["Click", "Zoom", "Interaction", "State change", "Focus result", "Zoom out"];
-
-const RELEASE_STEPS = ["Build", "Test", "Ship", "/clep:clep", "Publish"];
-
-const INSTALL_CMD = `/plugin marketplace add techwarq/clep-plugin
-/plugin install clep@clep-marketplace
-
-# Paste your API key (dashboard → API Keys)
-export CLEP_API_KEY=clep_live_...
-
-# In your app repo, prompt Claude Code:
-/clep:clep clip the ai-research feature — cinematic style`;
+const HERO_FLOW = ["React code", '<Feature data-clip="research" />', "/clip research", "3.8s video"];
 
 export default function Page() {
   const [toast, setToast] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [featIdx, setFeatIdx] = useState(0);
+  const [flowIdx, setFlowIdx] = useState(0);
 
   const showToast = (m: string) => {
     setToast(m);
     window.setTimeout(() => setToast(null), 2600);
   };
 
-  const copy = async (text: string, msg: string) => {
+  useEffect(() => {
+    const t = window.setInterval(() => setFeatIdx((i) => (i + 1) % FEATURES.length), 1500);
+    return () => window.clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    const t = window.setInterval(() => setFlowIdx((i) => (i + 1) % HERO_FLOW.length), 1700);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const copyCmd = async () => {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText("/clip");
     } catch {}
-    showToast(msg);
+    setCopied(true);
+    showToast("Copied — paste it anywhere you build");
+    window.setTimeout(() => setCopied(false), 1600);
   };
 
   const scrollToDemo = () => {
@@ -98,20 +56,20 @@ export default function Page() {
       <div className="nav">
         <div className="nav-inner">
           <a className="brand" href="#top" aria-label="clep — home">
-            <Image src="/logo.png" alt="clep" width={760} height={413} className="brand-logo" priority />
+            <ClepLogo markSize={28} fontSize={23} />
           </a>
           <nav className="nav-links">
             <a href="#how">How it Works</a>
-            <a href="#claude">Claude Code</a>
-            <a href="#demos">Micro Demos</a>
-            <a href="#plugin">Plugin</a>
+            <a href="#build">Claude Code</a>
+            <a href="#examples">Examples</a>
+            <a href="#pricing">Pricing</a>
           </nav>
           <div className="nav-actions">
             <a href="/login" className="login-link">
               Log in
             </a>
             <a href="/signup" className="btn btn-lime btn-sm">
-              Try Clep Free
+              Try Clep Free <span aria-hidden>→</span>
             </a>
             <button
               className="hamburger"
@@ -126,13 +84,13 @@ export default function Page() {
         {menuOpen && (
           <div className="mobile-menu">
             <a onClick={() => navGo("how")}>How it Works</a>
-            <a onClick={() => navGo("claude")}>Claude Code</a>
-            <a onClick={() => navGo("demos")}>Micro Demos</a>
-            <a onClick={() => navGo("plugin")}>Plugin</a>
+            <a onClick={() => navGo("build")}>Claude Code</a>
+            <a onClick={() => navGo("examples")}>Examples</a>
+            <a onClick={() => navGo("pricing")}>Pricing</a>
             <a href="/dashboard">Dashboard</a>
             <a href="/login">Log in</a>
             <a href="/signup" className="btn btn-lime">
-              Try Clep Free
+              Try Clep Free →
             </a>
           </div>
         )}
@@ -141,470 +99,312 @@ export default function Page() {
       <main id="top" className="wrap">
         {/* HERO */}
         <section className="hero">
-          <span className="pill hero-anim d1">
-            <span className="dot" /> Your code already knows how your product works
-          </span>
-          <h1 className="hero-anim d2">
-            Turn any feature into a <em>3–5 second</em> product clip.
-          </h1>
+          <p className="hero-eyebrow hero-anim d1">Your product knows how it works.</p>
+          <h1 className="hero-anim d2">Turn it into video.</h1>
           <p className="sub hero-anim d3">
-            Add one <code className="kbd">data-clep</code> attribute to your React app — or just prompt Claude and let
-            it add one for you. Then run <code className="kbd">/clep:clep</code> in Claude Code to capture the
-            feature and generate a cinematic demo.
+            Create product videos, walkthroughs, and UI mockups directly from your code.
           </p>
-          <div className="hero-cta hero-anim d4">
+          <div className="hero-anim d4">
+            <button className="cmd-pill" onClick={copyCmd} aria-label="Copy the /clip command">
+              <span className="cmd-dollar">$</span>
+              <code>/clip</code>
+              <span className="cmd-copy" aria-hidden>
+                {copied ? (
+                  "✓"
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="12" height="12" rx="2.5" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                )}
+              </span>
+            </button>
+          </div>
+          <div className="hero-cta hero-anim d5">
             <a className="btn btn-lime btn-lg" href="/signup">
               Try Clep Free <span aria-hidden>→</span>
             </a>
-            <button className="btn btn-ghost btn-lg" onClick={scrollToDemo}>
-              <span aria-hidden>▶</span> Watch it work
-            </button>
-          </div>
-          <div className="hero-proof hero-anim d5">
-            <span>✓ No screen recording</span>
-            <i />
-            <span>✓ No timeline editing</span>
-            <i />
-            <span>✓ No manual camera moves</span>
-          </div>
-          <div className="stat-strip hero-anim d6">
-            <div>
-              <b>2–5s</b>
-              <span>cinematic clips</span>
-            </div>
-            <div>
-              <b>1080p · 60fps</b>
-              <span>16:9 MP4, ready to post</span>
-            </div>
-            <div>
-              <b>1 command</b>
-              <span>/clep:clep does the rest</span>
-            </div>
           </div>
         </section>
 
-        <div className="logos hero-anim d6">
-          CLIPS, NOT SCREEN RECORDINGS
-          <div className="marquee">
-            <div className="marquee-track">
-              {[0, 1].map((k) => (
-                <div className="marquee-group" key={k}>
-                  {["16:9 MP4", "60FPS", "1080P", "AUTO-ZOOM", "CURSOR", "RIPPLE", "SAAS GRADE", "CINEMATIC"].map(
-                    (f) => (
-                      <span key={f}>
-                        <i className="mq-dot" /> {f}
-                      </span>
-                    ),
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* BUILD → MARK → CLIP */}
-        <Reveal className="section">
-          <div className="section-head">
-            <div className="eyebrow">Build it. Mark it. Clip it.</div>
-            <h2 className="h2">Three steps. One command that matters.</h2>
-          </div>
-          <div className="flow3">
-            <div className="flow-step">
-              <span className="flow-num">01</span>
-              <h3>Build</h3>
-              <p>Ship your React feature like normal. Nothing changes in your workflow.</p>
-              <code className="kbd">Your React app</code>
-            </div>
-            <span className="flow-arrow" aria-hidden>
-              →
-            </span>
-            <div className="flow-step">
-              <span className="flow-num">02</span>
-              <h3>Mark</h3>
-              <p>Claude adds one attribute to the right component — or add it yourself.</p>
-              <code className="kbd">data-clep="ai-research"</code>
-            </div>
-            <span className="flow-arrow" aria-hidden>
-              →
-            </span>
-            <div className="flow-step highlight">
-              <span className="flow-num">03</span>
-              <h3>Clip</h3>
-              <p>Run the plugin. Get a framed, directed 2–5s product clip.</p>
-              <code className="kbd">/clep:clep</code>
-            </div>
-          </div>
-        </Reveal>
-
-        <div className="hero-anim d6">
-          <DemoWidget onToast={showToast} />
-        </div>
-
-        {/* THE PROBLEM */}
-        <Reveal className="section">
-          <div className="section-head">
-            <div className="eyebrow">The problem</div>
-            <h2 className="h2">You built the feature. Now you have to make a video about it.</h2>
-            <p className="lead">Shipping a feature is easy compared to showing it beautifully.</p>
-          </div>
-          <div className="pain-grid">
-            <div className="pain-card bad">
-              <div className="pain-head">The old way · 9 painful steps</div>
-              <ul>
-                {MANUAL_STEPS.map((s) => (
-                  <li key={s}>
-                    <span className="x">✕</span> {s}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="pain-card good">
-              <div className="pain-head">The Clep way · 1 command</div>
-              <div className="clep-cmd">/clep:clep</div>
-              <p>Clip the ai-research feature — cinematic style. Clep finds it, drives it, frames it, exports it.</p>
-              <ul className="mini-check">
-                <li>✓ Auto-framed interaction</li>
-                <li>✓ Camera, cursor & ripple</li>
-                <li>✓ 1080p60 MP4 in seconds</li>
-              </ul>
-              <a className="btn btn-lime" href="/signup">
-                Skip the editing →
-              </a>
-            </div>
-          </div>
-        </Reveal>
-
-        {/* HOW IT WORKS */}
-        <Reveal className="section" id="how">
-          <div className="section-head">
-            <div className="eyebrow">How it works</div>
-            <h2 className="h2">From React component to product video.</h2>
-          </div>
-          <div className="steps4">
-            <div className="step">
-              <span className="step-num">01</span>
-              <h3>Mark your feature</h3>
-              <p>
-                Prompt Claude and it adds <code className="kbd">data-clep="ai-research"</code> to the right component
-                — or add it yourself any time.
-              </p>
-            </div>
-            <div className="step">
-              <span className="step-num">02</span>
-              <h3>Run your app locally</h3>
-              <p>
-                <code className="kbd">npm run dev</code>. Clep connects to your local dev server — source stays on
-                your machine during capture.
-              </p>
-            </div>
-            <div className="step">
-              <span className="step-num">03</span>
-              <h3>Run /clep:clep</h3>
-              <p>
-                Inside Claude Code: <code className="kbd">/clep:clep clip the ai-research feature</code>. Clep opens
-                your app in an isolated browser and runs it.
-              </p>
-            </div>
-            <div className="step">
-              <span className="step-num">04</span>
-              <h3>Get the clip</h3>
-              <p>Clep captures the interaction and directs the camera. 2–5s. Ready to ship.</p>
-            </div>
-          </div>
-          <div className="camera-card">
-            <div className="camera-label">Every clip follows a deliberate camera arc</div>
-            <div className="camera-flow">
-              {CAMERA_STEPS.map((c, i) => (
-                <span key={c} className="camera-group">
-                  <span className="camera-pill">{c}</span>
-                  {i < CAMERA_STEPS.length - 1 && (
-                    <span className="camera-arrow" aria-hidden>
-                      →
-                    </span>
-                  )}
+        {/* HERO VISUAL */}
+        <section className="hero-anim d6">
+          <div className="flow-strip" aria-hidden>
+            {HERO_FLOW.map((s, i) => (
+              <span key={s} className="flow-group">
+                <span className={`flow-node ${i === flowIdx ? "on" : i < flowIdx ? "done" : ""}`}>
+                  {i < flowIdx ? "✓ " : ""}{s}
                 </span>
-              ))}
-            </div>
-          </div>
-        </Reveal>
-
-        {/* BUILT FOR DEVELOPERS */}
-        <Reveal className="section">
-          <div className="section-head">
-            <div className="eyebrow">Built for developers</div>
-            <h2 className="h2">Your app is the source of truth.</h2>
-            <p className="lead">
-              No designer walkthrough needed. Your code already contains everything Clep needs to direct the video —
-              your feature becomes a structured timeline, and that timeline becomes the video.
-            </p>
-          </div>
-          <div className="truth-grid">
-            {SOURCE_OF_TRUTH.map(([icon, t, d]) => (
-              <div className="truth-card" key={t}>
-                <span className="truth-icon">{icon}</span>
-                <div>
-                  <b>{t}</b>
-                  <span>{d}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Reveal>
-
-        {/* CLAUDE CODE */}
-        <Reveal className="section" id="claude">
-          <div className="claude-band">
-            <div>
-              <div className="eyebrow light">Ask Claude to show your feature</div>
-              <blockquote className="claude-quote">
-                “/clep:clep create a 4 second demo of the new AI research feature.”
-              </blockquote>
-              <p className="claude-sub">
-                Describe the moment you want. Claude finds the feature, drives the interaction, and hands you a
-                finished clip.
-              </p>
-              <button className="btn btn-lime" onClick={() => copy("/clep:clep clip the ai-research feature", "Prompt copied — paste it in Claude Code")}>
-                Copy prompt
-              </button>
-            </div>
-            <div className="terminal">
-              <div className="term-head">
-                <span className="traffic">
-                  <i style={{ background: "#FF5F57" }} />
-                  <i style={{ background: "#FEBC2E" }} />
-                  <i style={{ background: "#28C840" }} />
-                </span>
-                <span className="term-title">claude code — /clep:clep</span>
-              </div>
-              <ul className="term-list">
-                <li>✓ Found AI Research</li>
-                <li>✓ Found interaction flow</li>
-                <li>✓ Started local app</li>
-                <li>✓ Captured the feature</li>
-                <li>✓ Generated the motion</li>
-                <li className="term-done">🎬 ai-research.mp4 — 1920×1080</li>
-              </ul>
-            </div>
-          </div>
-        </Reveal>
-
-        {/* CINEMATIC MOTION */}
-        <Reveal className="section">
-          <div className="section-head">
-            <div className="eyebrow">Not a screen recording</div>
-            <h2 className="h2">Cinematic motion, automatically.</h2>
-            <p className="lead">Clep turns raw browser interaction into a deliberate camera sequence.</p>
-          </div>
-          <div className="grid4">
-            {CINEMATIC_MOTION.map(([icon, t, d]) => (
-              <div className="card motion-card" key={t}>
-                <div className="icon">{icon}</div>
-                <h3>{t}</h3>
-                <p>{d}</p>
-              </div>
-            ))}
-          </div>
-        </Reveal>
-
-        {/* MICRO DEMOS */}
-        <Reveal className="section" id="demos">
-          <div className="section-head">
-            <div className="eyebrow">Micro demos</div>
-            <h2 className="h2">Perfect for tiny feature moments.</h2>
-            <p className="lead">Don&apos;t make a 2-minute product tour. Make dozens of tiny clips.</p>
-          </div>
-          <div className="clip-list">
-            {MICRO_DEMOS.map((c) => (
-              <div className="clip-row" key={c.name}>
-                <span className="play-btn" aria-hidden>
-                  ▶
-                </span>
-                <div className="clip-meta">
-                  <b>{c.name}</b>
-                  <span>{c.meta}</span>
-                  <div className="clip-bar">
-                    <div style={{ width: c.w }} />
-                  </div>
-                </div>
-                <span className="dur">{c.dur}</span>
-              </div>
-            ))}
-          </div>
-          <p className="use-label">Use them anywhere:</p>
-          <div className="use-grid">
-            {USE_CASES.map(([icon, t, d]) => (
-              <div className="card use-card" key={t}>
-                <span className="use-icon">{icon}</span>
-                <h3>{t}</h3>
-                <p>{d}</p>
-              </div>
-            ))}
-          </div>
-        </Reveal>
-
-        {/* PLUGIN */}
-        <Reveal className="section" id="plugin">
-          <div className="section-head">
-            <div className="eyebrow">One command, no SDK</div>
-            <h2 className="h2">Install the plugin. Mark it. Run /clep:clep.</h2>
-            <p className="lead">
-              No npm package to install — there isn&apos;t one yet. Claude adds{" "}
-              <code className="kbd">data-clep</code> for you via the plugin, and plain HTML attributes work without
-              any JS.
-            </p>
-          </div>
-          <div className="plugin-grid">
-            <div className="plugin-steps">
-              {[
-                ["1", "Add the marketplace", "Once per machine. Takes 10 seconds."],
-                ["2", "Paste your API key", "From dashboard → API Keys. Kept in your shell."],
-                ["3", "Prompt Claude in your repo", "Describe the feature. Get back an MP4."],
-              ].map(([n, t, d]) => (
-                <div className="plugin-step" key={n}>
-                  <span className="plugin-num">{n}</span>
-                  <div>
-                    <b>{t}</b>
-                    <span>{d}</span>
-                  </div>
-                </div>
-              ))}
-              <div className="plugin-cta">
-                <a className="btn btn-lime btn-sm" href="/signup">
-                  Get your API key
-                </a>
-                <a className="btn btn-ghost btn-sm" href="/dashboard">
-                  Open dashboard →
-                </a>
-              </div>
-            </div>
-            <div className="code-window">
-              <div className="code-head">
-                <span className="traffic">
-                  <i style={{ background: "#FF5F57" }} />
-                  <i style={{ background: "#FEBC2E" }} />
-                  <i style={{ background: "#28C840" }} />
-                </span>
-                <span>terminal — bash</span>
-                <button className="copy-btn" onClick={() => copy(INSTALL_CMD, "Install commands copied")}>
-                  Copy
-                </button>
-              </div>
-              <pre>{INSTALL_CMD}</pre>
-            </div>
-          </div>
-        </Reveal>
-
-        {/* LOCAL-FIRST */}
-        <Reveal className="section">
-          <div className="section-head">
-            <div className="eyebrow">Local-first</div>
-            <h2 className="h2">Your app stays local during capture.</h2>
-            <p className="lead">
-              Clep connects to your development server locally — no need to deploy an unfinished feature just to make
-              a demo.
-            </p>
-          </div>
-          <div className="local-flow">
-            {["localhost", "clep", "Playwright", "Browser capture"].map((s, i, arr) => (
-              <span key={s} className="camera-group">
-                <span className={`camera-pill ${i === arr.length - 1 ? "dark" : ""}`}>{s}</span>
-                {i < arr.length - 1 && (
-                  <span className="camera-arrow" aria-hidden>
-                    ↓
-                  </span>
-                )}
+                {i < HERO_FLOW.length - 1 && <span className="flow-arrow">↓</span>}
               </span>
             ))}
           </div>
-          <p className="local-tag">
-            <strong>Capture locally. Render when you&apos;re ready.</strong>
+          <DemoWidget onToast={showToast} />
+        </section>
+
+        {/* ONE COMMAND */}
+        <Reveal className="section roomy">
+          <div className="section-head">
+            <h2 className="h2">One command. Your whole product.</h2>
+            <div className="giant-cmd">/clip</div>
+            <p className="detect-line">
+              <span className="detect-check">✓</span>{" "}
+              <span key={featIdx} className="detect-word">
+                {FEATURES[featIdx]}
+              </span>{" "}
+              <span className="detect-muted">detected</span>
+            </p>
+            <p className="detect-sub">
+              <strong>Clep finds the feature.</strong>
+              <strong>Runs it.</strong>
+              <strong>Turns it into a video.</strong>
+            </p>
+          </div>
+        </Reveal>
+
+        {/* FROM CODE TO CLIP */}
+        <Reveal className="section roomy" id="how">
+          <div className="section-head">
+            <div className="eyebrow">How it works</div>
+            <h2 className="h2">From code to clip.</h2>
+          </div>
+          <div className="steps">
+            <div className="step">
+              <span className="step-num">01</span>
+              <h3>Mark</h3>
+              <p>Tag the feature in your code.</p>
+              <code className="kbd">data-clip=&quot;ai-research&quot;</code>
+            </div>
+            <div className="step">
+              <span className="step-num">02</span>
+              <h3>Run</h3>
+              <p>Ask for the clip.</p>
+              <code className="kbd">/clip ai-research</code>
+            </div>
+            <div className="step">
+              <span className="step-num">03</span>
+              <h3>Export</h3>
+              <p>Get a finished video file.</p>
+              <code className="kbd">3.8s · 1080p · 60fps</code>
+            </div>
+          </div>
+        </Reveal>
+
+        {/* NOT A SCREEN RECORDING */}
+        <Reveal className="section roomy">
+          <div className="section-head">
+            <h2 className="h2">Not a screen recording.</h2>
+          </div>
+          <div className="split-duo">
+            <div className="trad-card">
+              <div className="split-head">Traditional</div>
+              <div className="vflow">
+                {["Record", "Edit", "Zoom", "Crop", "Export"].map((s) => (
+                  <span key={s} className="vflow-group">
+                    <span className="vflow-pill muted">{s}</span>
+                    <span className="vflow-arrow" aria-hidden>↓</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="clep-card">
+              <div className="split-head">Clep</div>
+              <div className="vflow">
+                {["Code", "/clip", "Video"].map((s) => (
+                  <span key={s} className="vflow-group">
+                    <span className="vflow-pill lime">{s}</span>
+                    <span className="vflow-arrow" aria-hidden>↓</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <p className="split-foot">
+            <strong>Your code already knows what the feature does.</strong>
           </p>
         </Reveal>
 
-        {/* SHIP CTA */}
-        <Reveal className="cta">
-          <div>
-            <div className="eyebrow">For every feature you ship</div>
-            <h2>Ship the feature. Ship the demo.</h2>
-            <p>Every new feature gets a corresponding clip. Your release workflow becomes:</p>
-            <div className="release-flow">
-              {RELEASE_STEPS.map((s, i) => (
-                <span key={s} className="camera-group">
-                  <span className={`camera-pill sm ${s === "/clep:clep" ? "lime" : ""}`}>{s}</span>
-                  {i < RELEASE_STEPS.length - 1 && (
-                    <span className="camera-arrow sm" aria-hidden>
-                      →
-                    </span>
-                  )}
+        {/* THREE WAYS TO SHOW */}
+        <Reveal className="section roomy" id="examples">
+          <div className="section-head">
+            <h2 className="h2">Three ways to show your product.</h2>
+          </div>
+          <div className="way-grid">
+            <div className="card way-card">
+              <div className="loop-visual">
+                <span className="lv-play">▶</span>
+                <span className="lv-track">
+                  <span className="lv-fill" />
                 </span>
-              ))}
+              </div>
+              <h3>Product Videos</h3>
+              <p>Show a feature in action.</p>
             </div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 18 }}>
-              <a className="btn btn-dark btn-lg" href="/signup">
-                Try Clep Free →
-              </a>
+            <div className="card way-card">
+              <div className="loop-visual">
+                <ul className="lv-steps">
+                  <li>Sign up</li>
+                  <li>Invite team</li>
+                  <li>Ship demo</li>
+                </ul>
+              </div>
+              <h3>Walkthroughs</h3>
+              <p>Turn workflows into demos.</p>
             </div>
-            <div className="trust" style={{ textAlign: "left" }}>
-              No SDK • No credit card
+            <div className="card way-card">
+              <div className="loop-visual">
+                <div className="lv-zoom">
+                  <span className="lv-bar" />
+                  <span className="lv-bar short" />
+                  <span className="lv-btn" />
+                </div>
+              </div>
+              <h3>UI Mockups</h3>
+              <p>Create cinematic UI motion.</p>
             </div>
           </div>
-          <div className="cta-mock">
-            <div className="cta-mock-head">◉ ai-research.mp4</div>
-            <div className="cta-mock-sub">1920×1080 · 60fps · 3.8s</div>
-            <div className="mini-bar">
-              <div style={{ width: "100%" }} />
+        </Reveal>
+
+        {/* WHEREVER YOU BUILD */}
+        <Reveal className="section roomy" id="build">
+          <div className="section-head">
+            <div className="eyebrow">Connect</div>
+            <h2 className="h2">Use Clep wherever you build.</h2>
+          </div>
+          <div className="connect-grid">
+            <div className="card connect-card">
+              <h3>Claude Code</h3>
+              <div className="code-window mini">
+                <pre>/clip</pre>
+                <button
+                  className="copy-btn"
+                  onClick={() => {
+                    navigator.clipboard?.writeText("/clip").catch(() => {});
+                    showToast("Copied — paste it in Claude Code");
+                  }}
+                >
+                  Copy
+                </button>
+              </div>
             </div>
-            <div className="cta-mock-tags">
-              <span>auto-zoom</span>
-              <span>cursor</span>
-              <span>ripple</span>
+            <div className="card connect-card">
+              <h3>CLI</h3>
+              <div className="code-window mini">
+                <pre>clep clip</pre>
+                <button
+                  className="copy-btn"
+                  onClick={() => {
+                    navigator.clipboard?.writeText("clep clip").catch(() => {});
+                    showToast("Copied — run it in your terminal");
+                  }}
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+            <div className="card connect-card">
+              <h3>Dashboard</h3>
+              <p>Select a feature → Create clip.</p>
+              <a className="btn btn-lime btn-sm" href="/dashboard">
+                Open dashboard →
+              </a>
+            </div>
+          </div>
+        </Reveal>
+
+        {/* PRICING */}
+        <Reveal className="section roomy" id="pricing">
+          <div className="section-head">
+            <h2 className="h2">Start creating for free.</h2>
+          </div>
+          <div className="price-grid">
+            <div className="price-card">
+              <h3>Free</h3>
+              <div className="p-amount">$0</div>
+              <ul>
+                <li>5 clips / month</li>
+                <li>1080p exports</li>
+                <li>All three kinds</li>
+              </ul>
+              <a className="btn btn-ghost price-btn" href="/signup">
+                Start Free
+              </a>
+            </div>
+            <div className="price-card featured">
+              <h3>Pro</h3>
+              <div className="p-amount">
+                $9 <span>/ month</span>
+              </div>
+              <ul>
+                <li>50 clips / month</li>
+                <li>1080p60 exports</li>
+                <li>Priority rendering</li>
+              </ul>
+              <a className="btn btn-lime price-btn" href="/dashboard?view=billing">
+                Get Pro
+              </a>
+            </div>
+            <div className="price-card">
+              <h3>Studio</h3>
+              <div className="p-amount">
+                $19 <span>/ month</span>
+              </div>
+              <ul>
+                <li>150 clips / month</li>
+                <li>Everything in Pro</li>
+                <li>Team workspace</li>
+              </ul>
+              <a className="btn btn-ghost price-btn" href="/dashboard?view=billing">
+                Get Studio
+              </a>
             </div>
           </div>
         </Reveal>
 
         {/* FINAL CTA */}
-        <Reveal className="final-cta">
-          <h2>Your next feature already knows how to demo itself.</h2>
-          <p>Turn your UI into motion.</p>
-          <div className="final-cta-row">
+        <Reveal className="final-center">
+          <h2>Your product knows how to demo itself.</h2>
+          <p>Turn it into video with Clep.</p>
+          <div>
+            <button className="cmd-pill" onClick={copyCmd} aria-label="Copy the /clip command">
+              <span className="cmd-dollar">$</span>
+              <code>/clip</code>
+            </button>
+          </div>
+          <div className="hero-cta" style={{ marginTop: 22 }}>
             <a className="btn btn-lime btn-lg" href="/signup">
-              Start Building →
-            </a>
-            <a className="btn btn-ghost btn-lg" href="/dashboard">
-              Open dashboard
+              Try Clep Free <span aria-hidden>→</span>
             </a>
           </div>
-          <div className="final-note">No video editing timeline. No manual recording. Just your code and /clep:clep.</div>
         </Reveal>
 
         <footer>
-          <div className="foot-grid">
+          <div className="foot-grid foot-slim">
             <div>
-              <span className="foot-brand">clep</span>
-              <p className="foot-tag">Code it. Clip it. Ship it.</p>
+              <ClepLogo markSize={24} fontSize={19} />
+              <p className="foot-tag">Turn it into video.</p>
             </div>
             <nav>
               <b>Product</b>
               <a href="#how">How it works</a>
-              <a href="#demos">Micro demos</a>
+              <a href="#examples">Examples</a>
+              <a href="#pricing">Pricing</a>
+            </nav>
+            <nav>
+              <b>Build</b>
+              <a href="#build">Claude Code</a>
+              <a href="#build">CLI</a>
               <a href="/dashboard">Dashboard</a>
             </nav>
             <nav>
-              <b>Developers</b>
-              <a href="#plugin">Plugin install</a>
-              <a href="#claude">Claude Code</a>
-              <a href="/signup">API keys</a>
-            </nav>
-            <nav>
-              <b>Company</b>
-              <a href="#plugin">Privacy</a>
-              <a href="#plugin">Security</a>
-              <a href="#plugin">Terms</a>
+              <b>Account</b>
+              <a href="/login">Log in</a>
+              <a href="/signup">Sign up</a>
             </nav>
           </div>
           <div className="foot">
             <span>© 2026 Clep</span>
-            <span>Turn features into clips.</span>
+            <span>Code it. Clip it. Ship it.</span>
           </div>
         </footer>
       </main>

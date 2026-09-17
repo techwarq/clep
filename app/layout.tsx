@@ -21,14 +21,14 @@ const mono = IBM_Plex_Mono({
 const logo = Poppins({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-logo" });
 
 export const metadata: Metadata = {
-  title: "clep — Turn any feature into a 3–5 second product clip",
+  title: "clep — Turn it into video",
   description:
-    "Add one data-clep attribute to your React app, run /clep:clep in Claude Code, and get a cinematic 1080p60 product clip. No screen recording. No timeline editing.",
+    "Create product videos, walkthroughs, and UI mockups directly from your code. One command: /clip.",
   metadataBase: new URL("https://clep.vercel.app"),
   openGraph: {
-    title: "clep — Code it. Clip it. Ship it.",
+    title: "clep — Your product knows how it works. Turn it into video.",
     description:
-      "Your code already knows how your product works. Turn any feature into a 3–5 second product clip.",
+      "Mark a feature with data-clip, run /clip, get a cinematic product video.",
     type: "website"
   }
 };
