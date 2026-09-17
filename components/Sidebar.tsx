@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { ClepUser } from "../lib/api";
 
-export type DashView = "start" | "keys" | "billing" | "usage";
+export type DashView = "start" | "create" | "keys" | "billing" | "usage";
 
 function Icon({ d, extra }: { d: string; extra?: string }) {
   return (
@@ -19,6 +19,11 @@ const NAV: { key: DashView; label: string; icon: React.ReactNode }[] = [
     key: "start",
     label: "Get Started",
     icon: <Icon d="M5 15c-1.6 1.6-2 5-2 5s3.4-.4 5-2M14 4c3-2 8-2 8-2s0 5-2 8l-7.5 7.5-5-5L14 4z" extra="M15 9h.01" />,
+  },
+  {
+    key: "create",
+    label: "New Clip",
+    icon: <Icon d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8.5v7M8.5 12h7" />,
   },
   {
     key: "keys",

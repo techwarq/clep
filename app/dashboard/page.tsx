@@ -8,6 +8,7 @@ import {
   clearClepSession,
   clepMe,
   createApiKey,
+  createClip,
   deleteApiKey,
   getApiKey,
   getBilling,
@@ -19,6 +20,7 @@ import {
   type BillingInfo,
   type ClepJob,
   type ClepUser,
+  type ClipKind,
   type CreatedApiKey,
 } from "../../lib/api";
 
@@ -68,6 +70,23 @@ function DashboardInner() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  // New Clip form
+  const [fUrl, setFUrl] = useState("");
+  const [fName, setFName] = useState("");
+  const [fPrompt, setFPrompt] = useState("");
+  const [fKind, setFKind] = useState<ClipKind>("feature");
+  const [fSections, setFSections] = useState("hero");
+  const [fQuality, setFQuality] = useState("1080p");
+  const [fSizePreset, setFSizePreset] = useState<"default" | "card" | "custom">("default");
+  const [fCustomSize, setFCustomSize] = useState("1120x640");
+  const [fBgMode, setFBgMode] = useState<"default" | "blush" | "gradient" | "solid">("default");
+  const [fGradient, setFGradient] = useState("");
+  const [fSolid, setFSolid] = useState("#FFF5F7");
+  const [fDuration, setFDuration] = useState("");
+  const [fMovement, setFMovement] = useState("");
+  const [fCaptions, setFCaptions] = useState(false);
+  const [clipBusy, setClipBusy] = useState(false);
+  const [formErr, setFormErr] = useState<string | null>(null);
 
   const showToast = (m: string) => {
     setToast(m);
@@ -89,10 +108,34 @@ function DashboardInner() {
       .then((res) => setKeys(res.keys))
       .catch((err) => showToast(err instanceof Error ? err.message : "Couldn't load API keys"))
       .finally(() => setKeysLoading(false));
-    listClipJobs()
-      .then((res) => setJobs(res.jobs))
-      .catch((err) => showToast(err instanceof Error ? err.message : "Couldn't load usage"));
   }, [router]);
+
+  // Usage list: fetch on entering the view, then quietly poll while work is in flight.
+  useEffect(() => {
+    if (view !== "usage") return;
+    let stop = false;
+    let timer: number | undefined;
+    const load = async (loud: boolean) => {
+      try {
+        const res = await listClipJobs();
+        if (stop) return;
+        setJobs(res.jobs);
+        const busy = res.jobs.some((j) => j.status === "queued" || j.status === "recording" || j.status === "editing");
+        if (!busy && timer !== undefined) {
+          window.clearInterval(timer);
+          timer = undefined;
+        }
+      } catch (err) {
+        if (loud) showToast(err instanceof Error ? err.message : "Couldn't load usage");
+      }
+    };
+    load(true);
+    timer = window.setInterval(() => load(false), 5000);
+    return () => {
+      stop = true;
+      if (timer !== undefined) window.clearInterval(timer);
+    };
+  }, [view]);
 
   const logout = () => {
     clearClepSession();
@@ -141,6 +184,94 @@ function DashboardInner() {
       showToast(err instanceof Error ? err.message : "Couldn't delete key");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const bgPreviewStyle = (): React.CSSProperties | undefined => {
+    if (fBgMode === "solid" && /^#[0-9a-f]{3,8}$/i.test(fSolid.trim())) {
+      return { background: fSolid.trim() };
+    }
+    if (fBgMode === "gradient") {
+      const cols = fGradient
+        .split(",")
+        .map((c) => c.trim())
+        .filter((c) => /^#[0-9a-f]{3,8}$/i.test(c));
+      if (cols.length >= 2) return { background: `linear-gradient(135deg, ${cols.join(", ")})` };
+    }
+    return undefined;
+  };
+
+  const doCreateClip = async () => {
+    setFormErr(null);
+    const url = fUrl.trim();
+    if (!url) {
+      setFormErr("Paste the page URL to record.");
+      return;
+    }
+    if (!/^https?:\/\//i.test(url)) {
+      setFormErr("URL should start with http:// or https:// (localhost is fine).");
+      return;
+    }
+    if (!storedKey) {
+      setFormErr("Create an API key first — the browser needs one to launch clips.");
+      return;
+    }
+    const sections = fSections
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    let size: string | undefined;
+    if (fSizePreset === "card") {
+      size = "1120x640";
+    } else if (fSizePreset === "custom") {
+      const m = fCustomSize.trim().toLowerCase().replace(/\s+/g, "");
+      if (!/^\d+x\d+$/.test(m)) {
+        setFormErr("Custom size should look like 1120x640.");
+        return;
+      }
+      size = m;
+    }
+    let bg: string | undefined;
+    if (fBgMode === "blush") {
+      bg = "blush";
+    } else if (fBgMode === "gradient") {
+      if (!fGradient.trim()) {
+        setFormErr("Add at least two comma-separated colors for a custom gradient.");
+        return;
+      }
+      bg = fGradient.trim();
+    } else if (fBgMode === "solid") {
+      bg = `solid:${fSolid.trim()}`;
+    }
+    let duration: number | undefined;
+    if (fDuration.trim()) {
+      duration = Number(fDuration.trim());
+      if (!Number.isFinite(duration) || duration <= 0) {
+        setFormErr("Duration should be a positive number of seconds.");
+        return;
+      }
+    }
+    setClipBusy(true);
+    try {
+      const res = await createClip({
+        url,
+        ...(fName.trim() ? { name: fName.trim() } : {}),
+        kind: fKind,
+        ...(sections.length ? { sections } : {}),
+        ...(size ? { size } : {}),
+        ...(duration !== undefined ? { duration } : {}),
+        ...(fMovement.trim() ? { movement: fMovement.trim() } : {}),
+        ...(fCaptions ? { captions: true } : {}),
+        ...(bg ? { bg } : {}),
+        ...(fQuality !== "1080p" ? { quality: fQuality } : {}),
+        ...(fPrompt.trim() ? { prompt: fPrompt.trim() } : {}),
+      });
+      showToast(`Clip queued — ${res.job_id}`);
+      setView("usage");
+    } catch (err) {
+      setFormErr(err instanceof Error ? err.message : "Couldn't start the clip");
+    } finally {
+      setClipBusy(false);
     }
   };
 
@@ -280,6 +411,264 @@ function DashboardInner() {
             </>
           )}
 
+          {view === "create" && (
+            <>
+              <div className="mk-pagehead">
+                <div>
+                  <h1>New Clip</h1>
+                  <p>Point at a page, pick a look, queue the render. Watch it land under Usage.</p>
+                </div>
+              </div>
+
+              <section className="mk-card">
+                <div className="mk-card-body">
+                  {formErr && <p className="mk-form-error" role="alert">{formErr}</p>}
+
+                  <div className="mk-field">
+                    <label className="mk-flabel" htmlFor="nc-url">Page URL</label>
+                    <input
+                      id="nc-url"
+                      className="mk-input"
+                      value={fUrl}
+                      onChange={(e) => setFUrl(e.target.value)}
+                      placeholder="https://yourapp.com/pricing or http://localhost:3000"
+                      inputMode="url"
+                    />
+                  </div>
+
+                  <div className="mk-field">
+                    <span className="mk-flabel">Kind</span>
+                    <div className="mk-kind-grid">
+                      {(
+                        [
+                          ["tour", "Tour", "Multi-section sweep of a page"],
+                          ["feature", "Feature", "One interaction, 3–5 seconds"],
+                          ["mockup", "Mockup", "Full-bleed synthetic render · 30fps"],
+                        ] as [ClipKind, string, string][]
+                      ).map(([k, t, d]) => (
+                        <button
+                          key={k}
+                          type="button"
+                          className={`mk-kind ${fKind === k ? "active" : ""}`}
+                          onClick={() => setFKind(k)}
+                          aria-pressed={fKind === k}
+                        >
+                          <b>{t}</b>
+                          <span>{d}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mk-hint">Tours and feature demos render at 60fps · mockups at 30fps.</p>
+                  </div>
+
+                  <div className="mk-field">
+                    <label className="mk-flabel" htmlFor="nc-sections">Sections</label>
+                    <input
+                      id="nc-sections"
+                      className="mk-input"
+                      value={fSections}
+                      onChange={(e) => setFSections(e.target.value)}
+                      placeholder="hero, pricing, testimonial"
+                    />
+                    <p className="mk-hint">Which page sections to include (tours). Comma-separated.</p>
+                  </div>
+
+                  <div className="mk-two">
+                    <div className="mk-field">
+                      <span className="mk-flabel">Quality</span>
+                      <div className="mk-pills">
+                        <button
+                          type="button"
+                          className={`mk-pill ${fQuality === "1080p" ? "active" : ""}`}
+                          onClick={() => setFQuality("1080p")}
+                        >
+                          1080p · default
+                        </button>
+                        <button
+                          type="button"
+                          className={`mk-pill ${fQuality === "720p" ? "active" : ""}`}
+                          onClick={() => setFQuality("720p")}
+                        >
+                          720p · smaller
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mk-field">
+                      <label className="mk-flabel" htmlFor="nc-duration">Duration (seconds)</label>
+                      <input
+                        id="nc-duration"
+                        className="mk-input"
+                        value={fDuration}
+                        onChange={(e) => setFDuration(e.target.value)}
+                        placeholder="Auto"
+                        inputMode="decimal"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mk-field">
+                    <span className="mk-flabel">Canvas size</span>
+                    <div className="mk-pills">
+                      <button
+                        type="button"
+                        className={`mk-pill ${fSizePreset === "default" ? "active" : ""}`}
+                        onClick={() => setFSizePreset("default")}
+                      >
+                        1920×1080 · default
+                      </button>
+                      <button
+                        type="button"
+                        className={`mk-pill ${fSizePreset === "card" ? "active" : ""}`}
+                        onClick={() => setFSizePreset("card")}
+                      >
+                        1120×640 · card
+                      </button>
+                      <button
+                        type="button"
+                        className={`mk-pill ${fSizePreset === "custom" ? "active" : ""}`}
+                        onClick={() => setFSizePreset("custom")}
+                      >
+                        Custom…
+                      </button>
+                    </div>
+                    {fSizePreset === "custom" && (
+                      <div style={{ marginTop: 10 }}>
+                        <input
+                          className="mk-input"
+                          value={fCustomSize}
+                          onChange={(e) => setFCustomSize(e.target.value)}
+                          placeholder="1120x640"
+                          aria-label="Custom size in pixels"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mk-field">
+                    <span className="mk-flabel">Background</span>
+                    <div className="mk-pills">
+                      {(
+                        [
+                          ["default", "Default"],
+                          ["blush", "Blush"],
+                          ["gradient", "Custom gradient"],
+                          ["solid", "Solid"],
+                        ] as const
+                      ).map(([m, t]) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`mk-pill ${fBgMode === m ? "active" : ""}`}
+                          onClick={() => setFBgMode(m)}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                    {fBgMode === "gradient" && (
+                      <div style={{ marginTop: 10 }}>
+                        <input
+                          className="mk-input"
+                          value={fGradient}
+                          onChange={(e) => setFGradient(e.target.value)}
+                          placeholder="#F5E6F0,#B486B8,#5B2A86"
+                          aria-label="Custom gradient colors"
+                        />
+                      </div>
+                    )}
+                    {fBgMode === "solid" && (
+                      <div className="mk-color-row">
+                        <input
+                          type="color"
+                          className="mk-swatch"
+                          value={/#[0-9a-f]{6}$/i.test(fSolid.trim()) ? fSolid.trim() : "#FFF5F7"}
+                          onChange={(e) => setFSolid(e.target.value)}
+                          aria-label="Solid background color"
+                        />
+                        <input
+                          className="mk-input"
+                          value={fSolid}
+                          onChange={(e) => setFSolid(e.target.value)}
+                          placeholder="#FFF5F7"
+                          aria-label="Solid background hex"
+                        />
+                      </div>
+                    )}
+                    {bgPreviewStyle() && <div className="mk-bg-preview" style={bgPreviewStyle()} />}
+                    <p className="mk-hint">
+                      Styles the gradient canvas behind the floating window on recorded clips — mockups render
+                      full-bleed, so background doesn&apos;t apply to those.
+                    </p>
+                  </div>
+
+                  <div className="mk-two">
+                    <div className="mk-field">
+                      <label className="mk-flabel" htmlFor="nc-movement">Movement</label>
+                      <input
+                        id="nc-movement"
+                        className="mk-input"
+                        value={fMovement}
+                        onChange={(e) => setFMovement(e.target.value)}
+                        placeholder="Auto — e.g. slow push-in"
+                      />
+                    </div>
+                    <div className="mk-field">
+                      <label className="mk-flabel" htmlFor="nc-name">Clip name</label>
+                      <input
+                        id="nc-name"
+                        className="mk-input"
+                        value={fName}
+                        onChange={(e) => setFName(e.target.value)}
+                        placeholder="e.g. Launch card — hero"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mk-field">
+                    <label className="mk-flabel" htmlFor="nc-prompt">Prompt (words form)</label>
+                    <textarea
+                      id="nc-prompt"
+                      className="mk-textarea"
+                      value={fPrompt}
+                      onChange={(e) => setFPrompt(e.target.value)}
+                      placeholder="landing card loop showing hero, bg blush, 4s"
+                    />
+                    <p className="mk-hint">Plain words work too — background and duration cues are parsed out automatically.</p>
+                  </div>
+
+                  <div className="mk-field">
+                    <label className="mk-check">
+                      <input
+                        type="checkbox"
+                        checked={fCaptions}
+                        onChange={(e) => setFCaptions(e.target.checked)}
+                      />
+                      Add captions
+                    </label>
+                  </div>
+
+                  <div className="mk-submit-row">
+                    <button className="mk-btn-dark" disabled={clipBusy} onClick={doCreateClip}>
+                      {clipBusy ? "Queueing…" : "Queue clip →"}
+                    </button>
+                    <span className="mk-muted" style={{ margin: 0 }}>
+                      Renders on your backend · bad options fail fast before recording starts.
+                    </span>
+                  </div>
+                  {!storedKey && (
+                    <p className="mk-muted" style={{ marginTop: 12, marginBottom: 0 }}>
+                      No API key on this device yet —{" "}
+                      <button type="button" className="mk-mini-link" onClick={() => setView("keys")}>
+                        create one first
+                      </button>
+                      .
+                    </p>
+                  )}
+                </div>
+              </section>
+            </>
+          )}
+
           {view === "keys" && (
             <>
               <div className="mk-pagehead">
@@ -336,43 +725,45 @@ function DashboardInner() {
               <section className="mk-card mk-table-card">
                 <div className="mk-table-scroll">
                   <div className="mk-table mk-keys-grid">
-                    <div className="mk-th">Label</div>
-                    <div className="mk-th">Key</div>
-                    <div className="mk-th">Created By</div>
-                    <div className="mk-th">Created</div>
-                    <div className="mk-th">Last Used</div>
-                    <div className="mk-th" />
+                    <div className="mk-tr mk-tr-head">
+                      <div className="mk-th">Label</div>
+                      <div className="mk-th">Key</div>
+                      <div className="mk-th">Created By</div>
+                      <div className="mk-th">Created</div>
+                      <div className="mk-th">Last Used</div>
+                      <div className="mk-th" />
+                    </div>
                     {keysLoading ? (
-                      <>
+                      <div className="mk-tr mk-tr-body">
                         <div className="mk-td mk-muted">—</div>
                         <div className="mk-td mk-muted">Loading…</div>
                         <div className="mk-td mk-muted">—</div>
                         <div className="mk-td mk-muted">—</div>
                         <div className="mk-td mk-muted">—</div>
                         <div className="mk-td" />
-                      </>
+                      </div>
                     ) : keys.length === 0 ? (
-                      <>
+                      <div className="mk-tr mk-tr-body">
                         <div className="mk-td mk-muted">—</div>
                         <div className="mk-td mk-muted">No keys yet — create one above.</div>
                         <div className="mk-td mk-muted">—</div>
                         <div className="mk-td mk-muted">—</div>
                         <div className="mk-td mk-muted">—</div>
                         <div className="mk-td" />
-                      </>
+                      </div>
                     ) : (
                       keys.map((k) => (
-                        <>
-                          <div className="mk-td mk-muted" key={`${k.id}-label`}>{k.label}</div>
-                          <div className="mk-td mk-mono" key={`${k.id}-key`}>clep_live_••••{k.key_last4}</div>
-                          <div className="mk-td" key={`${k.id}-by`}>
+                        <div className="mk-tr mk-tr-body" key={k.id}>
+                          <div className="mk-td mk-muted">{k.label}</div>
+                          <div className="mk-td mk-mono">clep_live_••••{k.key_last4}</div>
+                          <div className="mk-td">
                             <span className="mk-avatar">{userInitial}</span>
                             <span className="mk-user">{user?.name || user?.email || "—"}</span>
                             <span className="mk-role">Admin</span>
                           </div>
-                          <div className="mk-td mk-muted" key={`${k.id}-created`}>{relativeTime(k.created)}</div>
-                          <div className="mk-td mk-muted" key={`${k.id}-used`}>{relativeTime(k.last_used)}</div>
-                          <div className="mk-td mk-actions" key={`${k.id}-act`}>
+                          <div className="mk-td mk-muted">{relativeTime(k.created)}</div>
+                          <div className="mk-td mk-muted">{relativeTime(k.last_used)}</div>
+                          <div className="mk-td mk-actions">
                             {confirmDeleteId === k.id ? (
                               <>
                                 <span className="mk-muted" style={{ margin: 0, fontSize: 12.5 }}>Sure?</span>
@@ -393,7 +784,7 @@ function DashboardInner() {
                               </button>
                             )}
                           </div>
-                        </>
+                        </div>
                       ))
                     )}
                   </div>
@@ -449,6 +840,19 @@ function DashboardInner() {
                   <h1>Usage</h1>
                   <p>Every clip job rendered on this account, newest first.</p>
                 </div>
+                <button
+                  className="mk-btn-light"
+                  onClick={async () => {
+                    try {
+                      const res = await listClipJobs();
+                      setJobs(res.jobs);
+                    } catch (err) {
+                      showToast(err instanceof Error ? err.message : "Couldn't load usage");
+                    }
+                  }}
+                >
+                  Refresh
+                </button>
               </div>
               <section className="mk-card mk-table-card">
                 {jobs.length === 0 ? (
@@ -470,19 +874,32 @@ function DashboardInner() {
                   <>
                     <div className="mk-table-scroll">
                       <div className="mk-table mk-usage-grid">
-                        <div className="mk-th">Clip</div>
-                        <div className="mk-th">Job ID</div>
-                        <div className="mk-th">Created</div>
-                        <div className="mk-th">Status</div>
-                        <div className="mk-th" />
+                        <div className="mk-tr mk-tr-head">
+                          <div className="mk-th">Clip</div>
+                          <div className="mk-th">Job ID</div>
+                          <div className="mk-th">Created</div>
+                          <div className="mk-th">Status</div>
+                          <div className="mk-th" />
+                        </div>
                         {jobs.map((j) => (
-                          <>
-                            <div className="mk-td" key={`${j.id}-name`}>
-                              <strong>{j.name}</strong>
+                          <div className="mk-tr mk-tr-body" key={j.id}>
+                            <div className="mk-td">
+                              <span className="mk-namecol">
+                                <strong>{j.name}</strong>
+                                {(j.kind || j.size) && (
+                                  <span className="mk-chips">
+                                    {j.kind && <span className="mk-chip">{j.kind}</span>}
+                                    {j.size && <span className="mk-chip mk-mono">{j.size}</span>}
+                                  </span>
+                                )}
+                                {j.status === "error" && j.error && (
+                                  <span className="mk-row-err">{j.error}</span>
+                                )}
+                              </span>
                             </div>
-                            <div className="mk-td mk-mono mk-muted" key={`${j.id}-id`}>{j.id}</div>
-                            <div className="mk-td mk-muted" key={`${j.id}-time`}>{relativeTime(j.created)}</div>
-                            <div className="mk-td" key={`${j.id}-status`}>
+                            <div className="mk-td mk-mono mk-muted">{j.id}</div>
+                            <div className="mk-td mk-muted">{relativeTime(j.created)}</div>
+                            <div className="mk-td">
                               <span
                                 className={`mk-status mk-status-${j.status === "done" ? "done" : j.status === "error" ? "error" : "busy"}`}
                               >
@@ -494,14 +911,14 @@ function DashboardInner() {
                                 {STATUS_LABEL[j.status]}
                               </span>
                             </div>
-                            <div className="mk-td mk-actions" key={`${j.id}-act`}>
+                            <div className="mk-td mk-actions">
                               {j.status === "done" && j.out ? (
                                 <a className="mk-btn-light" href={`${apiUrl}${j.out}`} target="_blank" rel="noreferrer">
                                   Download
                                 </a>
                               ) : null}
                             </div>
-                          </>
+                          </div>
                         ))}
                       </div>
                     </div>

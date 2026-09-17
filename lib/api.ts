@@ -191,12 +191,17 @@ export interface ClepFeature {
   button_label?: string;
 }
 
+export type ClipKind = "tour" | "feature" | "mockup";
+
 export interface ClepJob {
   id: string;
   status: "queued" | "recording" | "editing" | "done" | "error";
   name: string;
   url?: string;
-  style?: string;
+  kind?: ClipKind | string;
+  size?: string;
+  bg?: string;
+  duration?: number;
   quality?: string;
   out?: string | null;
   error?: string | null;
@@ -205,12 +210,22 @@ export interface ClepJob {
 
 export interface CreateClipInput {
   url: string;
-  name: string;
-  query?: string;
-  style?: string;
-  fps?: number;
+  name?: string;
+  kind?: ClipKind;
+  sections?: string[];
+  // Exact pixels, e.g. "1120x640". Omit for the 1920×1080 default.
+  size?: string;
+  // Seconds. Omit for auto.
+  duration?: number;
+  movement?: string;
+  captions?: boolean;
+  // Preset ("blush"), custom gradient ("#F5E6F0,#B486B8,#5B2A86") or solid ("solid:#FFF5F7").
+  // Styles the gradient canvas on recorded clips — not synthetic mockups (full-bleed).
+  bg?: string;
+  // "1080p" default, "720p" for smaller files.
   quality?: string;
-  steps?: unknown[];
+  // Words form — bg/duration cues are parsed out automatically.
+  prompt?: string;
 }
 
 async function clepFetch(path: string, init: RequestInit = {}): Promise<Response> {
