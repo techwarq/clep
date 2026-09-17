@@ -160,8 +160,10 @@ function DashboardInner() {
   // back to the stored CLI key, else prompt to create one.
   const storedKey = typeof window === "undefined" ? null : getApiKey();
   const displayKey = user?.api_key ?? storedKey ?? null;
-  const installCmd = `/plugin marketplace add techwarq/allore-pipelines\n/plugin install clep@clep-marketplace`;
-  const configureCmd = `clep configure --url ${apiUrl || "<CLEP_API_URL>"} --key ${displayKey ?? "<your key>"}`;
+  const installCmd = `/plugin marketplace add techwarq/clep-plugin\n/plugin install clep@clep-marketplace`;
+  // No --url: `clep configure` defaults to the hosted backend on its own —
+  // that's an implementation detail, not something to surface to users.
+  const configureCmd = `clep configure --key ${displayKey ?? "<your key>"}`;
   const tryCmd = `/clep:clep make a clip of the signup flow at http://localhost:3000`;
   const planName = billing?.plan_name ?? null;
   const userInitial = user?.name?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? "?";
