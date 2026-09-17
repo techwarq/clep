@@ -1,37 +1,3 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-const TOKEN_KEY = "clep_token";
-const USER_KEY = "clep_user";
-
-export interface StoredUser {
-  email: string;
-  name: string;
-}
-
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(TOKEN_KEY);
-}
-
-export function setToken(token: string): void {
-  window.localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function getUser(): StoredUser | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(USER_KEY);
-  return raw ? (JSON.parse(raw) as StoredUser) : null;
-}
-
-export function setUser(user: StoredUser): void {
-  window.localStorage.setItem(USER_KEY, JSON.stringify(user));
-}
-
-export function clearSession(): void {
-  window.localStorage.removeItem(TOKEN_KEY);
-  window.localStorage.removeItem(USER_KEY);
-}
-
 async function parseError(res: Response): Promise<string> {
   try {
     const body = (await res.json()) as { error?: string };
@@ -41,173 +7,12 @@ async function parseError(res: Response): Promise<string> {
   }
 }
 
-export async function signup(
-  email: string,
-  password: string,
-  name: string,
-): Promise<{ token: string; userId: string; name: string }> {
-  const res = await fetch(`${API_URL}/auth/signup`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, name }),
-  });
-  if (!res.ok) throw new Error(await parseError(res));
-  return res.json();
-}
-
-export async function login(email: string, password: string): Promise<{ token: string; name: string }> {
-  const res = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
-  if (!res.ok) throw new Error(await parseError(res));
-  return res.json();
-}
-
-// ---- Jobs ----
-
-export type JobStatus = "uploaded" | "parsing" | "extracting" | "validating" | "reviewing" | "complete" | "failed";
-
-export interface JobFile {
-  key: string;
-  name: string;
-  contentType: string;
-  documentType?: string;
-}
-
-export interface JobSummary {
-  total: number;
-  verified: number;
-  needsReview: number;
-}
-
-export interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-}
-
-export interface JobDetail {
-  id: string;
-  status: JobStatus;
-  files: JobFile[];
-  totalPages: number | null;
-  processedPages: number;
-  parsedPages?: number;
-  filesParsed?: number;
-  totalFiles?: number;
-  items: unknown[];
-  summary: JobSummary;
-  error?: string;
-  createdAt: string;
-  updatedAt: string;
-  // Only present once mode has flipped to "custom" via POST /chat.
-  chat?: ChatMessage[];
-  schemaStatus?: "drafting" | "confirmed";
-}
-
-export type JobListItem = Pick<JobDetail, "id" | "status" | "summary" | "createdAt" | "updatedAt"> & {
-  mode: string;
-  files: string[]; // file names only — see routes/jobs.ts's GET /jobs summary shape
-};
-
-async function authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const token = getToken();
-  const res = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: { ...init.headers, Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error(await parseError(res));
-  return res;
-}
-
-export async function createJob(
-  files: Array<{ name: string; contentType: string }>,
-): Promise<{ jobId: string; uploads: Array<{ fileIndex: number; uploadUrl: string; key: string }> }> {
-  const res = await authedFetch("/jobs", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ files }),
-  });
-  return res.json();
-}
-
-// Uploads directly to R2 via the presigned URL — not authedFetch, this
-// goes straight to Cloudflare's R2 endpoint, not the Worker (see
-// src/lib/presign.ts on the backend for why: the Worker never sees the
-// file's bytes).
-export async function uploadToPresignedUrl(uploadUrl: string, file: File): Promise<void> {
-  const res = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": file.type || "application/octet-stream" },
-    body: file,
-  });
-  if (!res.ok) throw new Error(`upload failed (${res.status})`);
-}
-
-export async function sendChatMessage(jobId: string, message: string): Promise<JobDetail> {
-  const res = await authedFetch(`/jobs/${jobId}/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message }),
-  });
-  return res.json();
-}
-
-export async function startExtract(jobId: string): Promise<JobDetail> {
-  const res = await authedFetch(`/jobs/${jobId}/extract`, { method: "POST" });
-  return res.json();
-}
-
-export async function getJobStatus(jobId: string): Promise<JobDetail> {
-  const res = await authedFetch(`/jobs/${jobId}`);
-  return res.json();
-}
-
-export async function listJobs(): Promise<JobListItem[]> {
-  const res = await authedFetch("/jobs");
-  const body = (await res.json()) as { jobs: JobListItem[] };
-  return body.jobs;
-}
-
-export async function downloadExport(jobId: string, format: "xlsx" | "csv" | "json"): Promise<Blob> {
-  const res = await authedFetch(`/jobs/${jobId}/export?format=${format}`);
-  return res.blob();
-}
-
-// ---- Billing ----
-
-export interface PlanInfo {
-  email: string;
-  name: string;
-  planName: string;
-  pagesRemaining: number;
-  pageQuota: number;
-  maxPagesPerDoc: number;
-}
-
-export async function getMe(): Promise<PlanInfo> {
-  const res = await authedFetch("/billing/me");
-  return res.json();
-}
-
-export async function startCheckout(planName: string): Promise<{ checkoutUrl: string }> {
-  const res = await authedFetch("/billing/checkout", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ planName }),
-  });
-  return res.json();
-}
-
-// ---- CLEP video platform (pipeline_clep backend, hosted separately) ----
-// Frontend lives here in /Users/sonalinayak/clep.
-// Backend lives in /Users/sonalinayak/Desktop/allore-pipelines/pipeline_clep
-// (platform/server.py today, hosted FastAPI/Workers tomorrow).
-// No public npm SDK yet — instrumentation is done by the Claude Code plugin.
+// ---- Clep auth ----
 
 const CLEP_API_URL = process.env.NEXT_PUBLIC_CLEP_API_URL ?? "";
 const CLEP_KEY_KEY = "clep_api_key";
+const CLEP_TOKEN_KEY = "clep_video_token";
+const CLEP_USER_KEY = "clep_video_user";
 
 export function getApiKey(): string | null {
   if (typeof window === "undefined") return null;
@@ -222,17 +27,11 @@ export function clearApiKey(): void {
   window.localStorage.removeItem(CLEP_KEY_KEY);
 }
 
-// ---- Clep auth (separate from the DocToSheet auth above — different
-// backend, different account system, so deliberately different storage
-// keys. A DocToSheet session must never be mistaken for a Clep session.) ----
-
-const CLEP_TOKEN_KEY = "clep_video_token";
-const CLEP_USER_KEY = "clep_video_user";
-
 export interface ClepUser {
   email: string;
   name: string;
   api_key: string;
+  plan_name?: string;
 }
 
 export function getClepToken(): string | null {
@@ -246,9 +45,13 @@ export function getClepUser(): ClepUser | null {
   return raw ? (JSON.parse(raw) as ClepUser) : null;
 }
 
+function setClepUser(user: ClepUser): void {
+  window.localStorage.setItem(CLEP_USER_KEY, JSON.stringify(user));
+}
+
 function setClepSession(token: string, user: ClepUser): void {
   window.localStorage.setItem(CLEP_TOKEN_KEY, token);
-  window.localStorage.setItem(CLEP_USER_KEY, JSON.stringify(user));
+  setClepUser(user);
   setApiKey(user.api_key);
 }
 
@@ -263,6 +66,18 @@ async function clepAuthFetch(path: string, init: RequestInit = {}): Promise<Resp
   const res = await fetch(`${CLEP_API_URL}${path}`, init);
   if (!res.ok) throw new Error(await parseError(res));
   return res;
+}
+
+// Bearer-token-authed calls — dashboard/account endpoints (/auth/*, /billing/*),
+// as opposed to clepFetch below which is X-API-Key-authed (/api/* — what the
+// plugin/CLI uses).
+async function clepBearerFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const token = getClepToken();
+  if (!token) throw new Error("not logged in");
+  return clepAuthFetch(path, {
+    ...init,
+    headers: { ...(init.headers ?? {}), Authorization: `Bearer ${token}` },
+  });
 }
 
 export async function clepSignup(email: string, password: string, name: string): Promise<ClepUser> {
@@ -290,11 +105,46 @@ export async function clepLogin(email: string, password: string): Promise<ClepUs
 }
 
 export async function clepMe(): Promise<ClepUser> {
-  const token = getClepToken();
-  if (!token) throw new Error("not logged in");
-  const res = await clepAuthFetch("/auth/me", { headers: { Authorization: `Bearer ${token}` } });
+  const res = await clepBearerFetch("/auth/me");
+  const user = (await res.json()) as ClepUser;
+  setClepUser(user);
+  setApiKey(user.api_key);
+  return user;
+}
+
+// Invalidates the old key immediately — anything using it (the plugin, a
+// deployed app's SDK) breaks until reconfigured with the new one.
+export async function regenerateApiKey(): Promise<string> {
+  const res = await clepBearerFetch("/auth/regenerate-key", { method: "POST" });
+  const { api_key } = (await res.json()) as { api_key: string };
+  setApiKey(api_key);
+  const user = getClepUser();
+  if (user) setClepUser({ ...user, api_key });
+  return api_key;
+}
+
+// ---- Billing (Dodo Payments) ----
+
+export interface BillingInfo {
+  plan_name: string;
+  billing_configured: boolean;
+}
+
+export async function getBilling(): Promise<BillingInfo> {
+  const res = await clepBearerFetch("/billing/me");
   return res.json();
 }
+
+export async function startClepCheckout(returnUrl: string): Promise<{ checkout_url: string }> {
+  const res = await clepBearerFetch("/billing/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ return_url: returnUrl }),
+  });
+  return res.json();
+}
+
+// ---- CLEP video platform (X-API-Key-authed — what the plugin/CLI uses) ----
 
 export interface ClepFeature {
   name: string;
