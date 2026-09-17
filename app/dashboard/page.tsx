@@ -73,18 +73,15 @@ function DashboardInner() {
   // New Clip form
   const [fUrl, setFUrl] = useState("");
   const [fName, setFName] = useState("");
-  const [fPrompt, setFPrompt] = useState("");
   const [fKind, setFKind] = useState<ClipKind>("feature");
   const [fSections, setFSections] = useState("hero");
-  const [fQuality, setFQuality] = useState("1080p");
   const [fSizePreset, setFSizePreset] = useState<"default" | "card" | "custom">("default");
   const [fCustomSize, setFCustomSize] = useState("1120x640");
   const [fBgMode, setFBgMode] = useState<"default" | "blush" | "gradient" | "solid">("default");
-  const [fGradient, setFGradient] = useState("");
+  const [g1, setG1] = useState("#F5E6F0");
+  const [g2, setG2] = useState("#B486B8");
+  const [g3, setG3] = useState("#5B2A86");
   const [fSolid, setFSolid] = useState("#FFF5F7");
-  const [fDuration, setFDuration] = useState("");
-  const [fMovement, setFMovement] = useState("");
-  const [fCaptions, setFCaptions] = useState(false);
   const [clipBusy, setClipBusy] = useState(false);
   const [formErr, setFormErr] = useState<string | null>(null);
 
@@ -187,18 +184,21 @@ function DashboardInner() {
     }
   };
 
-  const bgPreviewStyle = (): React.CSSProperties | undefined => {
-    if (fBgMode === "solid" && /^#[0-9a-f]{3,8}$/i.test(fSolid.trim())) {
-      return { background: fSolid.trim() };
-    }
-    if (fBgMode === "gradient") {
-      const cols = fGradient
-        .split(",")
-        .map((c) => c.trim())
-        .filter((c) => /^#[0-9a-f]{3,8}$/i.test(c));
-      if (cols.length >= 2) return { background: `linear-gradient(135deg, ${cols.join(", ")})` };
-    }
+  const BLUSH_PREVIEW = "linear-gradient(135deg, #FBE3EC, #F5B4D0, #E78BB0)";
+  const DEFAULT_PREVIEW = "linear-gradient(135deg, #e8e8ee, #f8f8fa, #dfe4ea)";
+
+  const bgValue = (): string | undefined => {
+    if (fBgMode === "blush") return "blush";
+    if (fBgMode === "gradient") return `${g1},${g2},${g3}`;
+    if (fBgMode === "solid") return `solid:${fSolid.trim()}`;
     return undefined;
+  };
+
+  const bgPreviewStyle = (): React.CSSProperties => {
+    if (fBgMode === "blush") return { background: BLUSH_PREVIEW };
+    if (fBgMode === "gradient") return { background: `linear-gradient(135deg, ${g1}, ${g2}, ${g3})` };
+    if (fBgMode === "solid" && /^#[0-9a-f]{6}$/i.test(fSolid.trim())) return { background: fSolid.trim() };
+    return { background: DEFAULT_PREVIEW };
   };
 
   const doCreateClip = async () => {
@@ -231,25 +231,10 @@ function DashboardInner() {
       }
       size = m;
     }
-    let bg: string | undefined;
-    if (fBgMode === "blush") {
-      bg = "blush";
-    } else if (fBgMode === "gradient") {
-      if (!fGradient.trim()) {
-        setFormErr("Add at least two comma-separated colors for a custom gradient.");
-        return;
-      }
-      bg = fGradient.trim();
-    } else if (fBgMode === "solid") {
-      bg = `solid:${fSolid.trim()}`;
-    }
-    let duration: number | undefined;
-    if (fDuration.trim()) {
-      duration = Number(fDuration.trim());
-      if (!Number.isFinite(duration) || duration <= 0) {
-        setFormErr("Duration should be a positive number of seconds.");
-        return;
-      }
+    let bg = bgValue();
+    if (fBgMode === "solid" && !/^#[0-9a-f]{6}$/i.test(fSolid.trim())) {
+      setFormErr("Solid color should be a hex like #FFF5F7.");
+      return;
     }
     setClipBusy(true);
     try {
@@ -259,12 +244,7 @@ function DashboardInner() {
         kind: fKind,
         ...(sections.length ? { sections } : {}),
         ...(size ? { size } : {}),
-        ...(duration !== undefined ? { duration } : {}),
-        ...(fMovement.trim() ? { movement: fMovement.trim() } : {}),
-        ...(fCaptions ? { captions: true } : {}),
         ...(bg ? { bg } : {}),
-        ...(fQuality !== "1080p" ? { quality: fQuality } : {}),
-        ...(fPrompt.trim() ? { prompt: fPrompt.trim() } : {}),
       });
       showToast(`Clip queued — ${res.job_id}`);
       setView("usage");
@@ -473,62 +453,38 @@ function DashboardInner() {
                     <p className="mk-hint">Which page sections to include (tours). Comma-separated.</p>
                   </div>
 
-                  <div className="mk-two">
-                    <div className="mk-field">
-                      <span className="mk-flabel">Quality</span>
-                      <div className="mk-pills">
-                        <button
-                          type="button"
-                          className={`mk-pill ${fQuality === "1080p" ? "active" : ""}`}
-                          onClick={() => setFQuality("1080p")}
-                        >
-                          1080p · default
-                        </button>
-                        <button
-                          type="button"
-                          className={`mk-pill ${fQuality === "720p" ? "active" : ""}`}
-                          onClick={() => setFQuality("720p")}
-                        >
-                          720p · smaller
-                        </button>
-                      </div>
-                    </div>
-                    <div className="mk-field">
-                      <label className="mk-flabel" htmlFor="nc-duration">Duration (seconds)</label>
-                      <input
-                        id="nc-duration"
-                        className="mk-input"
-                        value={fDuration}
-                        onChange={(e) => setFDuration(e.target.value)}
-                        placeholder="Auto"
-                        inputMode="decimal"
-                      />
-                    </div>
-                  </div>
-
                   <div className="mk-field">
                     <span className="mk-flabel">Canvas size</span>
-                    <div className="mk-pills">
+                    <div className="mk-opt-grid mk-opt-3">
                       <button
                         type="button"
-                        className={`mk-pill ${fSizePreset === "default" ? "active" : ""}`}
+                        className={`mk-opt ${fSizePreset === "default" ? "active" : ""}`}
                         onClick={() => setFSizePreset("default")}
+                        aria-pressed={fSizePreset === "default"}
                       >
-                        1920×1080 · default
+                        <span className="mk-sizebox" style={{ aspectRatio: "16 / 9" }} />
+                        <b>Widescreen</b>
+                        <span className="mk-opt-sub">1920 × 1080</span>
                       </button>
                       <button
                         type="button"
-                        className={`mk-pill ${fSizePreset === "card" ? "active" : ""}`}
+                        className={`mk-opt ${fSizePreset === "card" ? "active" : ""}`}
                         onClick={() => setFSizePreset("card")}
+                        aria-pressed={fSizePreset === "card"}
                       >
-                        1120×640 · card
+                        <span className="mk-sizebox" style={{ aspectRatio: "1120 / 640" }} />
+                        <b>Card</b>
+                        <span className="mk-opt-sub">1120 × 640</span>
                       </button>
                       <button
                         type="button"
-                        className={`mk-pill ${fSizePreset === "custom" ? "active" : ""}`}
+                        className={`mk-opt ${fSizePreset === "custom" ? "active" : ""}`}
                         onClick={() => setFSizePreset("custom")}
+                        aria-pressed={fSizePreset === "custom"}
                       >
-                        Custom…
+                        <span className="mk-sizebox mk-sizebox-dash">W×H</span>
+                        <b>Custom</b>
+                        <span className="mk-opt-sub">exact pixels</span>
                       </button>
                     </div>
                     {fSizePreset === "custom" && (
@@ -546,105 +502,103 @@ function DashboardInner() {
 
                   <div className="mk-field">
                     <span className="mk-flabel">Background</span>
-                    <div className="mk-pills">
-                      {(
-                        [
-                          ["default", "Default"],
-                          ["blush", "Blush"],
-                          ["gradient", "Custom gradient"],
-                          ["solid", "Solid"],
-                        ] as const
-                      ).map(([m, t]) => (
-                        <button
-                          key={m}
-                          type="button"
-                          className={`mk-pill ${fBgMode === m ? "active" : ""}`}
-                          onClick={() => setFBgMode(m)}
-                        >
-                          {t}
-                        </button>
-                      ))}
+                    <div className="mk-opt-grid mk-opt-4">
+                      <button
+                        type="button"
+                        className={`mk-opt ${fBgMode === "default" ? "active" : ""}`}
+                        onClick={() => setFBgMode("default")}
+                        aria-pressed={fBgMode === "default"}
+                      >
+                        <span className="mk-thumb" style={{ background: DEFAULT_PREVIEW }} />
+                        <b>Default</b>
+                        <span className="mk-opt-sub">studio gray</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`mk-opt ${fBgMode === "blush" ? "active" : ""}`}
+                        onClick={() => setFBgMode("blush")}
+                        aria-pressed={fBgMode === "blush"}
+                      >
+                        <span className="mk-thumb" style={{ background: BLUSH_PREVIEW }} />
+                        <b>Blush</b>
+                        <span className="mk-opt-sub">preset</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`mk-opt ${fBgMode === "gradient" ? "active" : ""}`}
+                        onClick={() => setFBgMode("gradient")}
+                        aria-pressed={fBgMode === "gradient"}
+                      >
+                        <span className="mk-thumb" style={{ background: `linear-gradient(135deg, ${g1}, ${g2}, ${g3})` }} />
+                        <b>Custom</b>
+                        <span className="mk-opt-sub">your gradient</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`mk-opt ${fBgMode === "solid" ? "active" : ""}`}
+                        onClick={() => setFBgMode("solid")}
+                        aria-pressed={fBgMode === "solid"}
+                      >
+                        <span className="mk-thumb" style={{ background: fSolid }} />
+                        <b>Solid</b>
+                        <span className="mk-opt-sub mk-mono">{fSolid}</span>
+                      </button>
                     </div>
                     {fBgMode === "gradient" && (
-                      <div style={{ marginTop: 10 }}>
-                        <input
-                          className="mk-input"
-                          value={fGradient}
-                          onChange={(e) => setFGradient(e.target.value)}
-                          placeholder="#F5E6F0,#B486B8,#5B2A86"
-                          aria-label="Custom gradient colors"
-                        />
+                      <div className="mk-dots-row">
+                        {[["g1", g1, setG1], ["g2", g2, setG2], ["g3", g3, setG3]].map(([k, v, set]) => (
+                          <label key={k as string} className="mk-dotpick" title={`Gradient color ${k}`}>
+                            <input
+                              type="color"
+                              value={v as string}
+                              onChange={(e) => (set as (c: string) => void)(e.target.value)}
+                              aria-label={`Gradient color ${k}`}
+                            />
+                            <span className="mk-mono">{v as string}</span>
+                          </label>
+                        ))}
                       </div>
                     )}
                     {fBgMode === "solid" && (
-                      <div className="mk-color-row">
-                        <input
-                          type="color"
-                          className="mk-swatch"
-                          value={/#[0-9a-f]{6}$/i.test(fSolid.trim()) ? fSolid.trim() : "#FFF5F7"}
-                          onChange={(e) => setFSolid(e.target.value)}
-                          aria-label="Solid background color"
-                        />
-                        <input
-                          className="mk-input"
-                          value={fSolid}
-                          onChange={(e) => setFSolid(e.target.value)}
-                          placeholder="#FFF5F7"
-                          aria-label="Solid background hex"
-                        />
+                      <div className="mk-dots-row">
+                        <label className="mk-dotpick" title="Solid color">
+                          <input
+                            type="color"
+                            value={/#[0-9a-f]{6}$/i.test(fSolid.trim()) ? fSolid.trim() : "#FFF5F7"}
+                            onChange={(e) => setFSolid(e.target.value)}
+                            aria-label="Solid background color"
+                          />
+                          <span className="mk-mono">{fSolid}</span>
+                        </label>
+                        {["#FFF5F7", "#FFFFFF", "#0D1412", "#000000"].map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            className={`mk-dotbtn ${fSolid.trim().toLowerCase() === c.toLowerCase() ? "active" : ""}`}
+                            style={{ background: c }}
+                            onClick={() => setFSolid(c)}
+                            aria-label={`Use ${c}`}
+                            title={c}
+                          />
+                        ))}
                       </div>
                     )}
-                    {bgPreviewStyle() && <div className="mk-bg-preview" style={bgPreviewStyle()} />}
+                    <div className="mk-bg-preview" style={bgPreviewStyle()} />
                     <p className="mk-hint">
                       Styles the gradient canvas behind the floating window on recorded clips — mockups render
                       full-bleed, so background doesn&apos;t apply to those.
                     </p>
                   </div>
 
-                  <div className="mk-two">
-                    <div className="mk-field">
-                      <label className="mk-flabel" htmlFor="nc-movement">Movement</label>
-                      <input
-                        id="nc-movement"
-                        className="mk-input"
-                        value={fMovement}
-                        onChange={(e) => setFMovement(e.target.value)}
-                        placeholder="Auto — e.g. slow push-in"
-                      />
-                    </div>
-                    <div className="mk-field">
-                      <label className="mk-flabel" htmlFor="nc-name">Clip name</label>
-                      <input
-                        id="nc-name"
-                        className="mk-input"
-                        value={fName}
-                        onChange={(e) => setFName(e.target.value)}
-                        placeholder="e.g. Launch card — hero"
-                      />
-                    </div>
-                  </div>
-
                   <div className="mk-field">
-                    <label className="mk-flabel" htmlFor="nc-prompt">Prompt (words form)</label>
-                    <textarea
-                      id="nc-prompt"
-                      className="mk-textarea"
-                      value={fPrompt}
-                      onChange={(e) => setFPrompt(e.target.value)}
-                      placeholder="landing card loop showing hero, bg blush, 4s"
+                    <label className="mk-flabel" htmlFor="nc-name">Clip name</label>
+                    <input
+                      id="nc-name"
+                      className="mk-input"
+                      value={fName}
+                      onChange={(e) => setFName(e.target.value)}
+                      placeholder="e.g. Launch card — hero"
                     />
-                    <p className="mk-hint">Plain words work too — background and duration cues are parsed out automatically.</p>
-                  </div>
-
-                  <div className="mk-field">
-                    <label className="mk-check">
-                      <input
-                        type="checkbox"
-                        checked={fCaptions}
-                        onChange={(e) => setFCaptions(e.target.checked)}
-                      />
-                      Add captions
-                    </label>
                   </div>
 
                   <div className="mk-submit-row">
