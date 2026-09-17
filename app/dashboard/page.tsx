@@ -4,16 +4,22 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar, { type DashView } from "../../components/Sidebar";
 import {
+  clearApiKey,
   clearClepSession,
   clepMe,
+  createApiKey,
+  deleteApiKey,
+  getApiKey,
   getBilling,
   getClepToken,
+  listApiKeys,
   listClipJobs,
-  regenerateApiKey,
   startClepCheckout,
+  type ApiKeyInfo,
   type BillingInfo,
   type ClepJob,
   type ClepUser,
+  type CreatedApiKey,
 } from "../../lib/api";
 
 const STATUS_LABEL: Record<ClepJob["status"], string> = {
@@ -24,7 +30,7 @@ const STATUS_LABEL: Record<ClepJob["status"], string> = {
   error: "Error",
 };
 
-function relativeTime(epochSeconds: number | undefined): string {
+function relativeTime(epochSeconds: number | null | undefined): string {
   if (!epochSeconds) return "—";
   const mins = Math.floor((Date.now() - epochSeconds * 1000) / 60000);
   if (mins < 1) return "just now";
@@ -34,12 +40,6 @@ function relativeTime(epochSeconds: number | undefined): string {
   const days = Math.floor(hours / 24);
   if (days < 30) return `${days}d ago`;
   return "last month";
-}
-
-function maskKey(key: string): string {
-  if (!key) return "";
-  if (key.length <= 14) return `${key.slice(0, 8)}_********`;
-  return `${key.slice(0, 12)}_********`;
 }
 
 export default function Dashboard() {
@@ -58,11 +58,16 @@ function DashboardInner() {
   const [user, setUser] = useState<ClepUser | null>(null);
   const [billing, setBilling] = useState<BillingInfo | null>(null);
   const [jobs, setJobs] = useState<ClepJob[]>([]);
-  const [regenBusy, setRegenBusy] = useState(false);
-  const [confirmRegen, setConfirmRegen] = useState(false);
+  const [keys, setKeys] = useState<ApiKeyInfo[]>([]);
+  const [keysLoading, setKeysLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newLabel, setNewLabel] = useState("prod");
+  const [creating, setCreating] = useState(false);
+  const [justCreated, setJustCreated] = useState<CreatedApiKey | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [revealKey, setRevealKey] = useState(false);
 
   const showToast = (m: string) => {
     setToast(m);
@@ -80,6 +85,10 @@ function DashboardInner() {
     getBilling()
       .then(setBilling)
       .catch((err) => showToast(err instanceof Error ? err.message : "Couldn't load billing"));
+    listApiKeys()
+      .then((res) => setKeys(res.keys))
+      .catch((err) => showToast(err instanceof Error ? err.message : "Couldn't load API keys"))
+      .finally(() => setKeysLoading(false));
     listClipJobs()
       .then((res) => setJobs(res.jobs))
       .catch((err) => showToast(err instanceof Error ? err.message : "Couldn't load usage"));
@@ -95,18 +104,43 @@ function DashboardInner() {
     showToast(msg);
   };
 
-  const doRegenerate = async () => {
-    setRegenBusy(true);
+  const doCreate = async () => {
+    const label = newLabel.trim() || "prod";
+    setCreating(true);
     try {
-      const newKey = await regenerateApiKey();
-      setUser((u) => (u ? { ...u, api_key: newKey } : u));
-      setConfirmRegen(false);
-      setRevealKey(false);
-      showToast("New key created — the old one stopped working");
+      const created = await createApiKey(label);
+      setKeys((ks) => [created, ...ks]);
+      setJustCreated(created);
+      // Surface the fresh secret in Get Started's configure command too.
+      setUser((u) => (u ? { ...u, api_key: created.key } : u));
+      setShowCreate(false);
+      setNewLabel("prod");
+      showToast("Key created — copy it now, it won't be shown again");
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Couldn't create key");
     } finally {
-      setRegenBusy(false);
+      setCreating(false);
+    }
+  };
+
+  const doDelete = async (key: ApiKeyInfo) => {
+    setDeletingId(key.id);
+    try {
+      await deleteApiKey(key.id);
+      setKeys((ks) => ks.filter((k) => k.id !== key.id));
+      setConfirmDeleteId(null);
+      // If the deleted key was the stored CLI key (last4 match), drop it so
+      // Usage/configure stop sending a dead secret.
+      const stored = getApiKey();
+      if (stored && stored.slice(-4) === key.key_last4) {
+        clearApiKey();
+        setUser((u) => (u && u.api_key && u.api_key.slice(-4) === key.key_last4 ? { ...u, api_key: undefined } : u));
+      }
+      showToast(`Deleted key "${key.label}"`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Couldn't delete key");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -122,10 +156,13 @@ function DashboardInner() {
   };
 
   const apiUrl = process.env.NEXT_PUBLIC_CLEP_API_URL ?? "";
+  // Raw secret is only ever known right after signup/creation — otherwise fall
+  // back to the stored CLI key, else prompt to create one.
+  const storedKey = typeof window === "undefined" ? null : getApiKey();
+  const displayKey = user?.api_key ?? storedKey ?? null;
   const installCmd = `/plugin marketplace add techwarq/allore-pipelines\n/plugin install clep@clep-marketplace`;
-  const configureCmd = `clep configure --url ${apiUrl || "<CLEP_API_URL>"} --key ${user?.api_key ?? "<your key>"}`;
+  const configureCmd = `clep configure --url ${apiUrl || "<CLEP_API_URL>"} --key ${displayKey ?? "<your key>"}`;
   const tryCmd = `/clep:clep make a clip of the signup flow at http://localhost:3000`;
-  const keyLabel = user ? (revealKey ? user.api_key : maskKey(user.api_key)) : "Loading…";
   const planName = billing?.plan_name ?? null;
   const userInitial = user?.name?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? "?";
 
@@ -190,17 +227,29 @@ function DashboardInner() {
                 </div>
                 <div className="mk-card-body">
                   <p className="mk-muted">Give this key to your agent to authorize Clep calls.</p>
-                  <div className="mk-keyrow">
-                    <span className="mk-tag">live</span>
-                    <code className="mk-key">{keyLabel}</code>
-                    <span className="mk-key-spacer" />
-                    <button className="mk-btn-light" onClick={() => user && copyText(user.api_key, "API key copied")}>
-                      Copy
-                    </button>
-                    <button className="mk-btn-light" onClick={() => setView("keys")}>
-                      <span aria-hidden>⚙</span> Manage
-                    </button>
-                  </div>
+                  {displayKey ? (
+                    <div className="mk-keyrow">
+                      <span className="mk-tag">live</span>
+                      <code className="mk-key">{displayKey}</code>
+                      <span className="mk-key-spacer" />
+                      <button className="mk-btn-light" onClick={() => copyText(displayKey, "API key copied")}>
+                        Copy
+                      </button>
+                      <button className="mk-btn-light" onClick={() => setView("keys")}>
+                        <span aria-hidden>⚙</span> Manage
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mk-keyrow">
+                      <span className="mk-muted" style={{ margin: 0 }}>
+                        No key on this device yet — create one to connect Claude Code.
+                      </span>
+                      <span className="mk-key-spacer" />
+                      <button className="mk-btn-dark" onClick={() => setView("keys")}>
+                        Create API key →
+                      </button>
+                    </div>
+                  )}
                 </div>
               </section>
 
@@ -236,22 +285,51 @@ function DashboardInner() {
                   <h1>API Keys</h1>
                   <p>Manage API keys for your workspace</p>
                 </div>
-                {!confirmRegen ? (
-                  <button className="mk-btn-dark" onClick={() => setConfirmRegen(true)}>
+                {!showCreate ? (
+                  <button className="mk-btn-dark" onClick={() => setShowCreate(true)}>
                     ＋ Create API Key
                   </button>
                 ) : (
                   <div className="mk-confirm">
-                    <span>Creating a key invalidates the current one. Sure?</span>
-                    <button className="mk-btn-dark" disabled={regenBusy} onClick={doRegenerate}>
-                      {regenBusy ? "Creating…" : "Yes, create"}
+                    <input
+                      className="mk-label-input"
+                      value={newLabel}
+                      onChange={(e) => setNewLabel(e.target.value)}
+                      placeholder="Label (e.g. prod)"
+                      aria-label="Key label"
+                      maxLength={40}
+                    />
+                    <button className="mk-btn-dark" disabled={creating} onClick={doCreate}>
+                      {creating ? "Creating…" : "Create"}
                     </button>
-                    <button className="mk-btn-light" onClick={() => setConfirmRegen(false)}>
+                    <button className="mk-btn-light" onClick={() => setShowCreate(false)}>
                       Cancel
                     </button>
                   </div>
                 )}
               </div>
+
+              {justCreated && (
+                <section className="mk-card mk-created-banner">
+                  <div className="mk-card-body">
+                    <div className="mk-created-title">Key created — copy it now</div>
+                    <p className="mk-muted" style={{ marginBottom: 12 }}>
+                      This is the only time the raw secret is shown. It won&apos;t be retrievable later.
+                    </p>
+                    <div className="mk-keyrow">
+                      <span className="mk-tag">{justCreated.label}</span>
+                      <code className="mk-key">{justCreated.key}</code>
+                      <span className="mk-key-spacer" />
+                      <button className="mk-btn-dark" onClick={() => copyText(justCreated.key, "API key copied")}>
+                        Copy key
+                      </button>
+                      <button className="mk-btn-light" onClick={() => setJustCreated(null)}>
+                        Done
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              )}
 
               <section className="mk-card mk-table-card">
                 <div className="mk-table-scroll">
@@ -262,35 +340,7 @@ function DashboardInner() {
                     <div className="mk-th">Created</div>
                     <div className="mk-th">Last Used</div>
                     <div className="mk-th" />
-                    {user ? (
-                      <>
-                        <div className="mk-td mk-muted">live</div>
-                        <div className="mk-td mk-mono">
-                          {keyLabel}
-                          <button className="mk-mini-link" onClick={() => setRevealKey((r) => !r)}>
-                            {revealKey ? "Hide" : "Reveal"}
-                          </button>
-                        </div>
-                        <div className="mk-td">
-                          <span className="mk-avatar">{userInitial}</span>
-                          <span className="mk-user">{user.name || user.email}</span>
-                          <span className="mk-role">Admin</span>
-                        </div>
-                        <div className="mk-td mk-muted">—</div>
-                        <div className="mk-td mk-muted">—</div>
-                        <div className="mk-td mk-actions">
-                          <button className="mk-mini-link" onClick={() => copyText(user.api_key, "API key copied")}>
-                            Copy
-                          </button>
-                          <button
-                            className="mk-danger"
-                            onClick={() => setConfirmRegen(true)}
-                          >
-                            Regenerate
-                          </button>
-                        </div>
-                      </>
-                    ) : (
+                    {keysLoading ? (
                       <>
                         <div className="mk-td mk-muted">—</div>
                         <div className="mk-td mk-muted">Loading…</div>
@@ -299,6 +349,50 @@ function DashboardInner() {
                         <div className="mk-td mk-muted">—</div>
                         <div className="mk-td" />
                       </>
+                    ) : keys.length === 0 ? (
+                      <>
+                        <div className="mk-td mk-muted">—</div>
+                        <div className="mk-td mk-muted">No keys yet — create one above.</div>
+                        <div className="mk-td mk-muted">—</div>
+                        <div className="mk-td mk-muted">—</div>
+                        <div className="mk-td mk-muted">—</div>
+                        <div className="mk-td" />
+                      </>
+                    ) : (
+                      keys.map((k) => (
+                        <>
+                          <div className="mk-td mk-muted" key={`${k.id}-label`}>{k.label}</div>
+                          <div className="mk-td mk-mono" key={`${k.id}-key`}>clep_live_••••{k.key_last4}</div>
+                          <div className="mk-td" key={`${k.id}-by`}>
+                            <span className="mk-avatar">{userInitial}</span>
+                            <span className="mk-user">{user?.name || user?.email || "—"}</span>
+                            <span className="mk-role">Admin</span>
+                          </div>
+                          <div className="mk-td mk-muted" key={`${k.id}-created`}>{relativeTime(k.created)}</div>
+                          <div className="mk-td mk-muted" key={`${k.id}-used`}>{relativeTime(k.last_used)}</div>
+                          <div className="mk-td mk-actions" key={`${k.id}-act`}>
+                            {confirmDeleteId === k.id ? (
+                              <>
+                                <span className="mk-muted" style={{ margin: 0, fontSize: 12.5 }}>Sure?</span>
+                                <button
+                                  className="mk-danger"
+                                  disabled={deletingId === k.id}
+                                  onClick={() => doDelete(k)}
+                                >
+                                  {deletingId === k.id ? "Deleting…" : "Yes, delete"}
+                                </button>
+                                <button className="mk-mini-link" onClick={() => setConfirmDeleteId(null)}>
+                                  Cancel
+                                </button>
+                              </>
+                            ) : (
+                              <button className="mk-danger" onClick={() => setConfirmDeleteId(k.id)}>
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      ))
                     )}
                   </div>
                 </div>
@@ -323,7 +417,7 @@ function DashboardInner() {
                       <div className="mk-plan-name">
                         {billing ? (billing.plan_name ? billing.plan_name[0].toUpperCase() + billing.plan_name.slice(1) : "Free") : "—"}
                       </div>
-                      <span className="mk-dodo">⬤ Powered by Dodo Payments</span>
+                      <span className="mk-dodo"><i className="mk-dot" /> Powered by Dodo Payments</span>
                     </div>
                     {planName !== "pro" && (
                       <button
@@ -358,9 +452,16 @@ function DashboardInner() {
                 {jobs.length === 0 ? (
                   <div className="mk-empty">
                     <div className="mk-empty-title">No clips rendered yet</div>
-                    <p className="mk-muted">Run the plugin from Get Started, then come back here.</p>
-                    <button className="mk-btn-dark" onClick={() => setView("start")}>
-                      Go to Get Started →
+                    <p className="mk-muted">
+                      {!storedKey
+                        ? "Create an API key first, then run the plugin from Get Started."
+                        : "Run the plugin from Get Started, then come back here."}
+                    </p>
+                    <button
+                      className="mk-btn-dark"
+                      onClick={() => setView(!storedKey ? "keys" : "start")}
+                    >
+                      {!storedKey ? "Create API key →" : "Go to Get Started →"}
                     </button>
                   </div>
                 ) : (

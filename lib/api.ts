@@ -30,7 +30,9 @@ export function clearApiKey(): void {
 export interface ClepUser {
   email: string;
   name: string;
-  api_key: string;
+  // Present only where the backend returns a raw secret: signup (auto-created
+  // "default" key). Login/me/keys never include raw values.
+  api_key?: string;
   plan_name?: string;
 }
 
@@ -52,7 +54,8 @@ function setClepUser(user: ClepUser): void {
 function setClepSession(token: string, user: ClepUser): void {
   window.localStorage.setItem(CLEP_TOKEN_KEY, token);
   setClepUser(user);
-  setApiKey(user.api_key);
+  // Only signup returns a raw key — never clobber the stored CLI key with undefined.
+  if (user.api_key) setApiKey(user.api_key);
 }
 
 export function clearClepSession(): void {
@@ -98,8 +101,10 @@ export async function clepLogin(email: string, password: string): Promise<ClepUs
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
-  const data = (await res.json()) as { token: string; api_key: string; name: string };
-  const user: ClepUser = { email, name: data.name, api_key: data.api_key };
+  // Login returns a session token only — no key (an account may have several).
+  // The stored X-API-Key (if any) is left untouched.
+  const data = (await res.json()) as { token: string; name: string };
+  const user: ClepUser = { email, name: data.name };
   setClepSession(data.token, user);
   return user;
 }
@@ -108,19 +113,44 @@ export async function clepMe(): Promise<ClepUser> {
   const res = await clepBearerFetch("/auth/me");
   const user = (await res.json()) as ClepUser;
   setClepUser(user);
-  setApiKey(user.api_key);
   return user;
 }
 
-// Invalidates the old key immediately — anything using it (the plugin, a
-// deployed app's SDK) breaks until reconfigured with the new one.
-export async function regenerateApiKey(): Promise<string> {
-  const res = await clepBearerFetch("/auth/regenerate-key", { method: "POST" });
-  const { api_key } = (await res.json()) as { api_key: string };
-  setApiKey(api_key);
-  const user = getClepUser();
-  if (user) setClepUser({ ...user, api_key });
-  return api_key;
+// ---- API keys (multi-key) ----
+
+export interface ApiKeyInfo {
+  id: string;
+  label: string;
+  key_last4: string;
+  created: number;
+  last_used: number | null;
+}
+
+// Raw `key` is returned exactly once, at creation. GET only yields key_last4.
+export interface CreatedApiKey extends ApiKeyInfo {
+  key: string;
+}
+
+export async function listApiKeys(): Promise<{ keys: ApiKeyInfo[] }> {
+  const res = await clepBearerFetch("/auth/keys");
+  return res.json();
+}
+
+export async function createApiKey(label: string): Promise<CreatedApiKey> {
+  const res = await clepBearerFetch("/auth/keys", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ label }),
+  });
+  const data = (await res.json()) as CreatedApiKey;
+  // Make the fresh secret the active CLI key so Usage/configure keep working.
+  if (data.key) setApiKey(data.key);
+  return data;
+}
+
+export async function deleteApiKey(id: string): Promise<{ ok: true }> {
+  const res = await clepBearerFetch(`/auth/keys/${id}`, { method: "DELETE" });
+  return res.json();
 }
 
 // ---- Billing (Dodo Payments) ----
