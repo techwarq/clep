@@ -113,10 +113,6 @@ export default function DemoWidget({ onToast }: { onToast: (m: string) => void }
 
         {/* RIGHT — real clip output */}
         <div className="sheet-pane">
-          <div className="conv-head">
-            <strong>dashboard-convert-1080p.mp4</strong>
-            <span className="conv-meta">{phase === "done" ? "1920×1080 · 60fps" : `${progress}%`}</span>
-          </div>
           <div className={`progress ${busy ? "loading" : ""}`}>
             <div style={{ width: `${progress}%` }} />
           </div>
