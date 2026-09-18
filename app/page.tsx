@@ -7,6 +7,10 @@ import Reveal from "../components/Reveal";
 
 const FEATURES = ["AI Research", "Document Upload", "AI Chat", "Checkout", "Dashboard", "Analytics"];
 
+const BETA = process.env.NEXT_PUBLIC_IN_BETA === "true";
+const SIGNUP_HREF = BETA ? "/invite" : "/signup";
+const SIGNUP_LABEL = BETA ? "Ask for invite" : "Try Clep Free";
+
 export default function Page() {
   const [toast, setToast] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -70,12 +74,20 @@ export default function Page() {
             <a href="#pricing">Pricing</a>
           </nav>
           <div className="nav-actions">
-            <a href="/login" className="login-link">
-              Log in
-            </a>
-            <a href="/signup" className="btn btn-lime btn-sm">
-              Try Clep Free <span aria-hidden>→</span>
-            </a>
+            {BETA ? (
+              <a href="/invite" className="btn btn-lime btn-sm">
+                Ask for invite <span aria-hidden>→</span>
+              </a>
+            ) : (
+              <>
+                <a href="/login" className="login-link">
+                  Log in
+                </a>
+                <a href="/signup" className="btn btn-lime btn-sm">
+                  Try Clep Free <span aria-hidden>→</span>
+                </a>
+              </>
+            )}
             <button
               className="hamburger"
               aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -93,10 +105,18 @@ export default function Page() {
             <a onClick={() => navGo("examples")}>Examples</a>
             <a onClick={() => navGo("pricing")}>Pricing</a>
             <a href="/dashboard">Dashboard</a>
-            <a href="/login">Log in</a>
-            <a href="/signup" className="btn btn-lime">
-              Try Clep Free →
-            </a>
+            {BETA ? (
+              <a href="/invite" className="btn btn-lime">
+                Ask for invite →
+              </a>
+            ) : (
+              <>
+                <a href="/login">Log in</a>
+                <a href="/signup" className="btn btn-lime">
+                  Try Clep Free →
+                </a>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -154,8 +174,8 @@ export default function Page() {
           </div>
           <p className="hero-take hero-anim d5">and let it take it from there.</p>
           <div className="hero-cta hero-anim d5">
-            <a className="btn btn-lime btn-lg" href="/signup">
-              Try Clep Free <span aria-hidden>→</span>
+            <a className="btn btn-lime btn-lg" href={SIGNUP_HREF}>
+              {SIGNUP_LABEL} <span aria-hidden>→</span>
             </a>
             <a className="btn btn-ghost btn-lg" href="#how">
               See how it works
@@ -377,8 +397,8 @@ export default function Page() {
                 <li>1080p exports</li>
                 <li>All three kinds</li>
               </ul>
-              <a className="btn btn-ghost price-btn" href="/signup">
-                Start Free
+              <a className="btn btn-ghost price-btn" href={SIGNUP_HREF}>
+                {BETA ? "Ask for invite" : "Start Free"}
               </a>
             </div>
             <div className="price-card featured">
@@ -391,8 +411,8 @@ export default function Page() {
                 <li>1080p60 exports</li>
                 <li>Priority rendering</li>
               </ul>
-              <a className="btn btn-lime price-btn" href="/dashboard?view=billing">
-                Get Pro
+              <a className="btn btn-lime price-btn" href={BETA ? SIGNUP_HREF : "/dashboard?view=billing"}>
+                {BETA ? "Ask for invite" : "Get Pro"}
               </a>
             </div>
             <div className="price-card">
@@ -405,8 +425,8 @@ export default function Page() {
                 <li>Everything in Pro</li>
                 <li>Team workspace</li>
               </ul>
-              <a className="btn btn-ghost price-btn" href="/dashboard?view=billing">
-                Get Studio
+              <a className="btn btn-ghost price-btn" href={BETA ? SIGNUP_HREF : "/dashboard?view=billing"}>
+                {BETA ? "Ask for invite" : "Get Studio"}
               </a>
             </div>
           </div>
@@ -423,8 +443,8 @@ export default function Page() {
             </button>
           </div>
           <div className="hero-cta" style={{ marginTop: 22 }}>
-            <a className="btn btn-lime btn-lg" href="/signup">
-              Try Clep Free <span aria-hidden>→</span>
+            <a className="btn btn-lime btn-lg" href={SIGNUP_HREF}>
+              {SIGNUP_LABEL} <span aria-hidden>→</span>
             </a>
           </div>
         </Reveal>
@@ -449,8 +469,14 @@ export default function Page() {
             </nav>
             <nav>
               <b>Account</b>
-              <a href="/login">Log in</a>
-              <a href="/signup">Sign up</a>
+              {BETA ? (
+                <a href="/invite">Ask for invite</a>
+              ) : (
+                <>
+                  <a href="/login">Log in</a>
+                  <a href="/signup">Sign up</a>
+                </>
+              )}
             </nav>
           </div>
           <div className="foot">
