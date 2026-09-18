@@ -4,7 +4,7 @@ import "./globals.css";
 
 const body = Public_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   variable: "--font-public"
 });
 const display = Instrument_Serif({
@@ -23,12 +23,12 @@ const logo = Poppins({ subsets: ["latin"], weight: ["600", "700"], variable: "--
 export const metadata: Metadata = {
   title: "clep — Turn it into video",
   description:
-    "Create product videos, walkthroughs, and UI mockups directly from your code. One command: /clip.",
+    "Create product videos, walkthroughs, and UI mockups directly from your code. One command: /clep.",
   metadataBase: new URL("https://clep.vercel.app"),
   openGraph: {
     title: "clep — Your product knows how it works. Turn it into video.",
     description:
-      "Mark a feature with data-clip, run /clip, get a cinematic product video.",
+      "Mark a feature with data-clep, run /clep, get a cinematic product video.",
     type: "website"
   }
 };

@@ -7,14 +7,12 @@ import Reveal from "../components/Reveal";
 
 const FEATURES = ["AI Research", "Document Upload", "AI Chat", "Checkout", "Dashboard", "Analytics"];
 
-const HERO_FLOW = ["React code", '<Feature data-clip="research" />', "/clip research", "3.8s video"];
-
 export default function Page() {
   const [toast, setToast] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedClep, setCopiedClep] = useState(false);
   const [featIdx, setFeatIdx] = useState(0);
-  const [flowIdx, setFlowIdx] = useState(0);
 
   const showToast = (m: string) => {
     setToast(m);
@@ -26,18 +24,25 @@ export default function Page() {
     return () => window.clearInterval(t);
   }, []);
 
-  useEffect(() => {
-    const t = window.setInterval(() => setFlowIdx((i) => (i + 1) % HERO_FLOW.length), 1700);
-    return () => window.clearInterval(t);
-  }, []);
+  const INSTALL_CMDS = `/plugin marketplace add techwarq/clep-plugin
+/plugin install clep@clep-marketplace`;
 
   const copyCmd = async () => {
     try {
-      await navigator.clipboard.writeText("/clip");
+      await navigator.clipboard.writeText(INSTALL_CMDS);
     } catch {}
     setCopied(true);
-    showToast("Copied — paste it anywhere you build");
+    showToast("Copied — paste it into Claude Code");
     window.setTimeout(() => setCopied(false), 1600);
+  };
+
+  const copySlash = async () => {
+    try {
+      await navigator.clipboard.writeText("/clep");
+    } catch {}
+    setCopiedClep(true);
+    showToast("Copied — paste /clep in Claude Code");
+    window.setTimeout(() => setCopiedClep(false), 1600);
   };
 
   const scrollToDemo = () => {
@@ -97,18 +102,45 @@ export default function Page() {
       </div>
 
       <main id="top" className="wrap">
-        {/* HERO */}
-        <section className="hero">
-          <p className="hero-eyebrow hero-anim d1">Your product knows how it works.</p>
-          <h1 className="hero-anim d2">Turn it into video.</h1>
-          <p className="sub hero-anim d3">
-            Create product videos, walkthroughs, and UI mockups directly from your code.
+        {/* HERO — Monid-style */}
+        <section className="hero hero-monid">
+          <div className="hero-anim d1">
+            <span className="hero-badge">
+              <i className="hero-badge-dot" aria-hidden />
+              Live · Claude Code plugin
+            </span>
+          </div>
+          <h1 className="hero-title hero-anim d2">
+            Product demos,
+            <br />
+            <em>straight from your code.</em>
+          </h1>
+          <p className="hero-give hero-anim d3">
+            Build it. <span className="hero-slash">/clep</span> it. Share it.
           </p>
           <div className="hero-anim d4">
-            <button className="cmd-pill" onClick={copyCmd} aria-label="Copy the /clip command">
-              <span className="cmd-dollar">$</span>
-              <code>/clip</code>
-              <span className="cmd-copy" aria-hidden>
+            <div
+              className="install-box"
+              role="button"
+              tabIndex={0}
+              onClick={copyCmd}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") copyCmd();
+              }}
+              aria-label="Copy plugin install commands"
+              title="Click to copy"
+            >
+              <div className="install-lines">
+                <div className="install-line">
+                  <span className="cmd-dollar">$</span>
+                  <code>/plugin marketplace add techwarq/clep-plugin</code>
+                </div>
+                <div className="install-line">
+                  <span className="cmd-dollar">$</span>
+                  <code>/plugin install clep@clep-marketplace</code>
+                </div>
+              </div>
+              <span className="install-copy" aria-hidden>
                 {copied ? (
                   "✓"
                 ) : (
@@ -118,35 +150,42 @@ export default function Page() {
                   </svg>
                 )}
               </span>
-            </button>
+            </div>
           </div>
+          <p className="hero-take hero-anim d5">and let it take it from there.</p>
           <div className="hero-cta hero-anim d5">
             <a className="btn btn-lime btn-lg" href="/signup">
               Try Clep Free <span aria-hidden>→</span>
+            </a>
+            <a className="btn btn-ghost btn-lg" href="#how">
+              See how it works
             </a>
           </div>
         </section>
 
         {/* HERO VISUAL */}
         <section className="hero-anim d6">
-          <div className="flow-strip" aria-hidden>
-            {HERO_FLOW.map((s, i) => (
-              <span key={s} className="flow-group">
-                <span className={`flow-node ${i === flowIdx ? "on" : i < flowIdx ? "done" : ""}`}>
-                  {i < flowIdx ? "✓ " : ""}{s}
-                </span>
-                {i < HERO_FLOW.length - 1 && <span className="flow-arrow">↓</span>}
-              </span>
-            ))}
-          </div>
           <DemoWidget onToast={showToast} />
         </section>
 
         {/* ONE COMMAND */}
         <Reveal className="section roomy">
           <div className="section-head">
+            <div className="eyebrow">One command</div>
             <h2 className="h2">One command. Your whole product.</h2>
-            <div className="giant-cmd">/clip</div>
+            <button className="giant-cmd" onClick={copySlash} aria-label="Copy the /clep command" title="Click to copy">
+              <span className="giant-slash">/</span>clep
+              <span className="giant-copy" aria-hidden>
+                {copiedClep ? (
+                  "✓"
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="12" height="12" rx="2.5" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                )}
+              </span>
+            </button>
             <p className="detect-line">
               <span className="detect-check">✓</span>{" "}
               <span key={featIdx} className="detect-word">
@@ -154,11 +193,23 @@ export default function Page() {
               </span>{" "}
               <span className="detect-muted">detected</span>
             </p>
-            <p className="detect-sub">
-              <strong>Clep finds the feature.</strong>
-              <strong>Runs it.</strong>
-              <strong>Turns it into a video.</strong>
-            </p>
+            <div className="clep-trio">
+              <div className="clep-trio-card">
+                <span className="clep-trio-num">01</span>
+                <b>Finds the feature</b>
+                <span>Clep locates it in your code — no recording setup.</span>
+              </div>
+              <div className="clep-trio-card">
+                <span className="clep-trio-num">02</span>
+                <b>Runs it live</b>
+                <span>Drives the real UI in a browser, cursor and all.</span>
+              </div>
+              <div className="clep-trio-card">
+                <span className="clep-trio-num">03</span>
+                <b>Ships the video</b>
+                <span>Edited, graded, 1080p60 MP4 ready to share.</span>
+              </div>
+            </div>
           </div>
         </Reveal>
 
@@ -173,13 +224,13 @@ export default function Page() {
               <span className="step-num">01</span>
               <h3>Mark</h3>
               <p>Tag the feature in your code.</p>
-              <code className="kbd">data-clip=&quot;ai-research&quot;</code>
+              <code className="kbd">data-clep=&quot;ai-research&quot;</code>
             </div>
             <div className="step">
               <span className="step-num">02</span>
               <h3>Run</h3>
               <p>Ask for the clip.</p>
-              <code className="kbd">/clip ai-research</code>
+              <code className="kbd">/clep ai-research</code>
             </div>
             <div className="step">
               <span className="step-num">03</span>
@@ -210,7 +261,7 @@ export default function Page() {
             <div className="clep-card">
               <div className="split-head">Clep</div>
               <div className="vflow">
-                {["Code", "/clip", "Video"].map((s) => (
+                {["Code", "/clep", "Video"].map((s) => (
                   <span key={s} className="vflow-group">
                     <span className="vflow-pill lime">{s}</span>
                     <span className="vflow-arrow" aria-hidden>↓</span>
@@ -275,11 +326,11 @@ export default function Page() {
             <div className="card connect-card">
               <h3>Claude Code</h3>
               <div className="code-window mini">
-                <pre>/clip</pre>
+                <pre>/clep</pre>
                 <button
                   className="copy-btn"
                   onClick={() => {
-                    navigator.clipboard?.writeText("/clip").catch(() => {});
+                    navigator.clipboard?.writeText("/clep").catch(() => {});
                     showToast("Copied — paste it in Claude Code");
                   }}
                 >
@@ -366,9 +417,9 @@ export default function Page() {
           <h2>Your product knows how to demo itself.</h2>
           <p>Turn it into video with Clep.</p>
           <div>
-            <button className="cmd-pill" onClick={copyCmd} aria-label="Copy the /clip command">
+            <button className="cmd-pill" onClick={copySlash} aria-label="Copy the /clep command">
               <span className="cmd-dollar">$</span>
-              <code>/clip</code>
+              <code>/clep</code>
             </button>
           </div>
           <div className="hero-cta" style={{ marginTop: 22 }}>

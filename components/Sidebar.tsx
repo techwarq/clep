@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ClepUser } from "../lib/api";
+import { ClepMark } from "./Logo";
 
 export type DashView = "start" | "create" | "keys" | "billing" | "usage";
 
@@ -63,8 +64,8 @@ export default function Sidebar({
     <aside className="sb">
       <div className="sb-top">
         <div className="sb-brand">
-          <span className="sb-logo">C</span>
-          <span>clep</span>
+          <ClepMark size={26} />
+          <span style={{ fontFamily: "var(--font-logo, Poppins, sans-serif)", fontWeight: 600, letterSpacing: "-0.03em" }}>clep</span>
         </div>
 
         <button className="sb-workspace" title={workspaceName}>

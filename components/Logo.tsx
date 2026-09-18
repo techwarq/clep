@@ -1,12 +1,19 @@
 export function ClepMark({ size = 26 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 512 512" role="img" aria-label="clep mark" style={{ flex: "none", borderRadius: size * 0.22 }}>
-      <rect width="512" height="512" rx="104" fill="#000" />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 512 512"
+      role="img"
+      aria-label="clep mark"
+      style={{ flex: "none", display: "block", borderRadius: size * 0.24 }}
+    >
+      <rect width="512" height="512" rx="116" fill="#0a0a0a" />
       <path
-        d="M296.9 181.7 A78 78 0 1 0 296.9 306.3"
+        d="M351.1 176.3 A124 124 0 1 0 351.1 335.7"
         fill="none"
         stroke="#fff"
-        strokeWidth="38"
+        strokeWidth="80"
       />
     </svg>
   );
@@ -16,7 +23,14 @@ export function ClepWordmark({ fontSize = 24, color = "#0a0a0a" }: { fontSize?: 
   return (
     <span
       className="wordmark"
-      style={{ fontSize, color }}
+      style={{
+        fontSize,
+        color,
+        fontFamily: "var(--font-logo, Poppins, sans-serif)",
+        fontWeight: 600,
+        letterSpacing: "-0.03em",
+        lineHeight: 1,
+      }}
     >
       clep
     </span>
@@ -35,7 +49,7 @@ export default function ClepLogo({
   gap?: number;
 }) {
   return (
-    <span className="clep-logo" style={{ gap }}>
+    <span className="clep-logo" style={{ gap, display: "inline-flex", alignItems: "center" }}>
       <ClepMark size={markSize} />
       <ClepWordmark fontSize={fontSize} color={color} />
     </span>
