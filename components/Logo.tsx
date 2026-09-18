@@ -10,10 +10,10 @@ export function ClepMark({ size = 26 }: { size?: number }) {
     >
       <rect width="512" height="512" rx="116" fill="#0a0a0a" />
       <path
-        d="M351.1 176.3 A124 124 0 1 0 351.1 335.7"
+        d="M375.5 155.7 A156 156 0 1 0 375.5 356.3"
         fill="none"
         stroke="#fff"
-        strokeWidth="80"
+        strokeWidth="88"
       />
     </svg>
   );
