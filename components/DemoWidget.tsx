@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 
 const BACKDROP = "linear-gradient(135deg,#c4b5fd,#f9a8d4,#bfdbfe)";
-const VIDEO_SRC = "/dashboard-convert-1080p.mp4";
+const VIDEO_SRC = "/doc-convert-1080p.mp4";
 
 const STEPS = [
   "Discovering data-clep features…",
