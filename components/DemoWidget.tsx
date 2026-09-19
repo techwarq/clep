@@ -137,19 +137,6 @@ export default function DemoWidget({ onToast }: { onToast: (m: string) => void }
             <div className="clip-caption">{phase === "idle" ? "16:9 canvas · floating window · gradient backdrop" : phase === "done" ? "▶ real render — dashboard convert, 1080p60" : STEPS[stepIdx]}</div>
           </div>
 
-          <ol className="conv-steps">
-            {STEPS.map((label, i) => {
-              const done = phase === "done" || (phase !== "idle" && i < stepIdx);
-              const act = phase !== "idle" && phase !== "done" && i === stepIdx;
-              return (
-                <li key={label} className={done ? "done" : act ? "active" : ""}>
-                  {done ? <span className="tick">✓</span> : act ? <span className="spin" /> : <span className="tick" />}
-                  {label}
-                </li>
-              );
-            })}
-          </ol>
-
           <div className="sheet-actions">
             <a className="btn btn-lime btn-sm" href={VIDEO_SRC} download>
               ⤓ Download MP4
