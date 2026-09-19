@@ -1,82 +1,28 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-
 const BACKDROP = "linear-gradient(135deg,#c4b5fd,#f9a8d4,#bfdbfe)";
 const VIDEO_SRC = "/doc-convert-1080p.mp4";
-
-const STEPS = [
-  "Discovering data-clep features…",
-  "Driving the live feature…",
-  "Editing raw capture (zoom, cursor, ripple)…",
-  "Exporting 16:9 MP4, 60fps…",
-];
 
 const SNIPPET = `<button data-clep="ai-research" data-clep-action="primary">
   Start Research
 </button>`;
 
 export default function DemoWidget({ onToast }: { onToast: (m: string) => void }) {
-  const [phase, setPhase] = useState<"idle" | "recording" | "editing" | "done">("idle");
-  const [progress, setProgress] = useState(0);
-  const [stepIdx, setStepIdx] = useState(0);
-  const timers = useRef<number[]>([]);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const clear = () => {
-    timers.current.forEach((t) => window.clearTimeout(t));
-    timers.current = [];
+  const copySnippet = () => {
+    navigator.clipboard?.writeText(SNIPPET).catch(() => {});
+    onToast("data-clep snippet copied");
   };
 
-  const runClip = useCallback(() => {
-    clear();
-    setPhase("recording");
-    setProgress(4);
-    setStepIdx(0);
-    const v = videoRef.current;
-    if (v) {
-      v.currentTime = 0;
-      v.play().catch(() => {});
-    }
-    STEPS.forEach((_, i) => {
-      timers.current.push(
-        window.setTimeout(() => {
-          setStepIdx(i);
-          setProgress(8 + Math.round(((i + 1) / STEPS.length) * 88));
-          if (i === 2) setPhase("editing");
-        }, 700 * (i + 1)),
-      );
-    });
-    timers.current.push(
-      window.setTimeout(() => {
-        setPhase("done");
-        setProgress(100);
-      }, 700 * (STEPS.length + 1)),
-    );
-  }, []);
-
-  const busy = phase === "recording" || phase === "editing";
-
   return (
-    <div className="demo-shell" id="demo" data-clep="demo-clip" data-clep-state={phase}>
+    <div className="demo-shell" id="demo" data-clep="demo-clip">
       <div className="demo-topbar">
         <div className="traffic">
           <i style={{ background: "#FF5F57" }} />
           <i style={{ background: "#FEBC2E" }} />
           <i style={{ background: "#28C840" }} />
-          <span className="topbar-url" style={{ marginLeft: 10 }}>
-            app.clep.io — feature → clip
-          </span>
         </div>
-        <span className={`live live-${phase}`}>
-          <b />{" "}
-          {phase === "recording"
-            ? "RECORDING"
-            : phase === "editing"
-              ? "EDITING"
-              : phase === "done"
-                ? "MP4 READY"
-                : "LIVE DEMO"}
+        <span className="live live-idle">
+          <b /> LIVE DEMO
         </span>
       </div>
 
@@ -89,14 +35,7 @@ export default function DemoWidget({ onToast }: { onToast: (m: string) => void }
           <div className="demo-snippet">
             <div className="demo-snippet-head">
               <span>ai-research.tsx</span>
-              <button
-                onClick={() => {
-                  navigator.clipboard?.writeText(SNIPPET).catch(() => {});
-                  onToast("data-clep snippet copied");
-                }}
-              >
-                Copy
-              </button>
+              <button onClick={copySnippet}>Copy</button>
             </div>
             <pre>{SNIPPET}</pre>
           </div>
@@ -104,22 +43,12 @@ export default function DemoWidget({ onToast }: { onToast: (m: string) => void }
             Prompt Claude: <em>“/clep:clep clip the ai-research feature”</em> — it adds{" "}
             <code className="kbd">data-clep</code> + actions + states, then renders.
           </p>
-
-          <button className="btn btn-lime btn-lg demo-run" onClick={runClip}>
-            {phase === "idle" ? "▶ Make Clip — watch it happen" : phase === "done" ? "↻ Replay the pipeline" : "● Running…"}
-          </button>
-          <div className="demo-fine">No manual recording. Plugin + API key only — no SDK install.</div>
         </div>
 
         {/* RIGHT — real clip output */}
         <div className="sheet-pane">
-          <div className={`progress ${busy ? "loading" : ""}`}>
-            <div style={{ width: `${progress}%` }} />
-          </div>
-
           <div className="clip-stage" style={{ background: BACKDROP }}>
             <video
-              ref={videoRef}
               className="clip-video"
               src={VIDEO_SRC}
               autoPlay
@@ -134,7 +63,7 @@ export default function DemoWidget({ onToast }: { onToast: (m: string) => void }
                 v.play().catch(() => {});
               }}
             />
-            <div className="clip-caption">{phase === "idle" ? "16:9 canvas · floating window · gradient backdrop" : phase === "done" ? "▶ real render — dashboard convert, 1080p60" : STEPS[stepIdx]}</div>
+            <div className="clip-caption">16:9 canvas · floating window · gradient backdrop</div>
           </div>
 
           <div className="sheet-actions">
@@ -144,13 +73,7 @@ export default function DemoWidget({ onToast }: { onToast: (m: string) => void }
             <button className="btn btn-ghost btn-sm" onClick={() => onToast("trace.json: cursor, clicks, bbox per step")}>
               trace.json
             </button>
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => {
-                navigator.clipboard?.writeText(SNIPPET).catch(() => {});
-                onToast("data-clep snippet copied");
-              }}
-            >
+            <button className="btn btn-ghost btn-sm" onClick={copySnippet}>
               Copy snippet
             </button>
           </div>

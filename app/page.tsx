@@ -69,7 +69,6 @@ export default function Page() {
           </a>
           <nav className="nav-links">
             <a href="#how">How it Works</a>
-            <a href="#build">Claude Code</a>
             <a href="#examples">Examples</a>
             <a href="#pricing">Pricing</a>
           </nav>
@@ -101,7 +100,6 @@ export default function Page() {
         {menuOpen && (
           <div className="mobile-menu">
             <a onClick={() => navGo("how")}>How it Works</a>
-            <a onClick={() => navGo("build")}>Claude Code</a>
             <a onClick={() => navGo("examples")}>Examples</a>
             <a onClick={() => navGo("pricing")}>Pricing</a>
             <a href="/dashboard">Dashboard</a>
@@ -463,8 +461,6 @@ export default function Page() {
             </nav>
             <nav>
               <b>Build</b>
-              <a href="#build">Claude Code</a>
-              <a href="#build">CLI</a>
               <a href="/dashboard">Dashboard</a>
             </nav>
             <nav>
