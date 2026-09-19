@@ -334,53 +334,6 @@ export default function Page() {
           </div>
         </Reveal>
 
-        {/* WHEREVER YOU BUILD */}
-        <Reveal className="section roomy" id="build">
-          <div className="section-head">
-            <div className="eyebrow">Connect</div>
-            <h2 className="h2">Use Clep wherever you build.</h2>
-          </div>
-          <div className="connect-grid">
-            <div className="card connect-card">
-              <h3>Claude Code</h3>
-              <div className="code-window mini">
-                <pre>/clep</pre>
-                <button
-                  className="copy-btn"
-                  onClick={() => {
-                    navigator.clipboard?.writeText("/clep").catch(() => {});
-                    showToast("Copied — paste it in Claude Code");
-                  }}
-                >
-                  Copy
-                </button>
-              </div>
-            </div>
-            <div className="card connect-card">
-              <h3>CLI</h3>
-              <div className="code-window mini">
-                <pre>clep clip</pre>
-                <button
-                  className="copy-btn"
-                  onClick={() => {
-                    navigator.clipboard?.writeText("clep clip").catch(() => {});
-                    showToast("Copied — run it in your terminal");
-                  }}
-                >
-                  Copy
-                </button>
-              </div>
-            </div>
-            <div className="card connect-card">
-              <h3>Dashboard</h3>
-              <p>Select a feature → Create clip.</p>
-              <a className="btn btn-lime btn-sm" href="/dashboard">
-                Open dashboard →
-              </a>
-            </div>
-          </div>
-        </Reveal>
-
         {/* PRICING */}
         <Reveal className="section roomy" id="pricing">
           <div className="section-head">
