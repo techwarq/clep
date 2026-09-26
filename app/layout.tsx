@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Instrument_Serif, Inter_Tight, Poppins, Public_Sans } from "next/font/google";
+import { IBM_Plex_Mono, Instrument_Serif, Poppins, Public_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 const body = Public_Sans({
@@ -18,7 +19,8 @@ const mono = IBM_Plex_Mono({
   weight: ["400", "500", "600"],
   variable: "--font-plex"
 });
-const tight = Inter_Tight({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-tight" });
+// Self-hosted: next/font/google's Inter Tight fetch breaks Vercel builds.
+const tight = localFont({ src: "./fonts/InterTight-latin-wght-normal.woff2", weight: "100 900", variable: "--font-tight" });
 const logo = Poppins({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-logo" });
 
 export const metadata: Metadata = {
