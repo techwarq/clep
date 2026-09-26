@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Instrument_Serif, Poppins, Public_Sans } from "next/font/google";
+import { IBM_Plex_Mono, Instrument_Serif, Inter_Tight, Poppins, Public_Sans } from "next/font/google";
 import "./globals.css";
 
 const body = Public_Sans({
@@ -18,17 +18,18 @@ const mono = IBM_Plex_Mono({
   weight: ["400", "500", "600"],
   variable: "--font-plex"
 });
-const logo = Poppins({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-logo" });
+const tight = Inter_Tight({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-tight" });
+const logo = Poppins({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-logo" });
 
 export const metadata: Metadata = {
-  title: "clep — Turn it into video",
+  title: "clep — Launch your product every day",
   description:
-    "Create product videos, walkthroughs, and UI mockups directly from your code. One command: /clep.",
+    "The fastest, cheapest way to make launch videos. Paste your site, describe the video, get studio-grade motion in your brand.",
   metadataBase: new URL("https://clep.vercel.app"),
   openGraph: {
-    title: "clep — Your product knows how it works. Turn it into video.",
+    title: "clep — Launch your product every day",
     description:
-      "Mark a feature with data-clep, run /clep, get a cinematic product video.",
+      "Paste your site. Describe the video. Get a studio-grade launch video in minutes.",
     type: "website"
   }
 };
@@ -39,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${body.variable} ${display.variable} ${mono.variable} ${logo.variable}`}>
+    <html lang="en" className={`${body.variable} ${display.variable} ${mono.variable} ${logo.variable} ${tight.variable}`}>
       <body>{children}</body>
     </html>
   );
