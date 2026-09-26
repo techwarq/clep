@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import ClepLogo from "./Logo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clepLogin, clepSignup } from "../lib/api";
@@ -48,7 +48,7 @@ export default function AuthCard({ mode }: { mode: "login" | "signup" }) {
       <main className="wrap auth-page">
         <div className="auth-card">
           <Link href="/" aria-label="clep — home">
-            <Image src="/logo.png" alt="clep" width={760} height={413} className="auth-logo" priority />
+            <ClepLogo height={34} />
           </Link>
           <h1>{isSignup ? "Create your account" : "Welcome back"}</h1>
           <p className="auth-sub">

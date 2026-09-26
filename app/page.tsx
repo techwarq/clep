@@ -148,7 +148,7 @@ export default function Page() {
         <div className="sky-bg" aria-hidden />
         <div className="sky-nav">
           <a className="brand" href="#top" aria-label="clep — home">
-            <ClepLogo markSize={26} fontSize={21} color="#fff" />
+            <ClepLogo height={26} color="#fff" />
           </a>
           <nav className="sky-links">
             <a href="#how">How it works</a>
@@ -552,7 +552,7 @@ export default function Page() {
         <footer className="lp-foot">
           <div className="lp-foot-grid">
             <div>
-              <ClepLogo markSize={24} fontSize={19} />
+              <ClepLogo height={24} />
               <p className="foot-tag">Launch every day.</p>
             </div>
             <nav>
@@ -579,7 +579,7 @@ export default function Page() {
             </nav>
           </div>
           <div className="lp-foot-mark" aria-hidden>
-            clep
+            <ClepLogo height={260} color="#efefed" />
           </div>
           <div className="lp-foot-bar">
             <span>© 2026 Clep</span>

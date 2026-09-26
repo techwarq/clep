@@ -37,21 +37,40 @@ export function ClepWordmark({ fontSize = 24, color = "#0a0a0a" }: { fontSize?: 
   );
 }
 
+const WORDMARK_RATIO = 800 / 388;
+
+/** The clep wordmark (public/clep-wordmark.png), tinted via mask so it works on any background. */
 export default function ClepLogo({
-  markSize = 30,
   fontSize = 25,
+  height,
   color = "#0a0a0a",
-  gap = 9,
 }: {
   markSize?: number;
   fontSize?: number;
+  height?: number;
   color?: string;
   gap?: number;
 }) {
+  const h = height ?? Math.round(fontSize * 1.05);
   return (
-    <span className="clep-logo" style={{ gap, display: "inline-flex", alignItems: "center" }}>
-      <ClepMark size={markSize} />
-      <ClepWordmark fontSize={fontSize} color={color} />
-    </span>
+    <span
+      className="clep-logo"
+      role="img"
+      aria-label="clep"
+      style={{
+        display: "inline-block",
+        width: Math.round(h * WORDMARK_RATIO),
+        height: h,
+        backgroundColor: color,
+        WebkitMaskImage: "url(/clep-wordmark.png)",
+        maskImage: "url(/clep-wordmark.png)",
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskPosition: "left center",
+        maskPosition: "left center",
+      }}
+    />
   );
 }

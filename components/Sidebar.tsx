@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { ClepUser } from "../lib/api";
-import { ClepMark } from "./Logo";
+import ClepLogo from "./Logo";
 
 export type DashView = "create" | "capture" | "keys" | "billing" | "usage";
 
@@ -15,16 +15,24 @@ function Icon({ d, extra }: { d: string; extra?: string }) {
   );
 }
 
-const NAV: { key: DashView; label: string; icon: React.ReactNode; badge?: string }[] = [
+const NAV: { key: DashView | "videos"; label: string; icon: React.ReactNode; badge?: string; disabled?: boolean }[] = [
   {
     key: "create",
     label: "Create",
     icon: <Icon d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3z" extra="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z" />,
   },
   {
+    key: "videos",
+    label: "Videos",
+    badge: "Soon",
+    disabled: true,
+    icon: <Icon d="M4 6.5A1.5 1.5 0 0 1 5.5 5h13A1.5 1.5 0 0 1 20 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11z" extra="M4 9h16M8 5v4M12 5v4M16 5v4" />,
+  },
+  {
     key: "capture",
     label: "Capture",
     badge: "Soon",
+    disabled: true,
     icon: <Icon d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-9z" extra="M10 9.5v5l4-2.5-4-2.5z" />,
   },
   {
@@ -65,8 +73,7 @@ export default function Sidebar({
     <aside className="sb">
       <div className="sb-top">
         <div className="sb-brand">
-          <ClepMark size={26} />
-          <span style={{ fontFamily: "var(--font-logo, Poppins, sans-serif)", fontWeight: 600, letterSpacing: "-0.03em" }}>clep</span>
+          <ClepLogo height={24} />
         </div>
 
         <button className="sb-workspace" title={workspaceName}>
@@ -81,8 +88,10 @@ export default function Sidebar({
           {NAV.map((n) => (
             <button
               key={n.key}
-              className={`sb-nav-item ${view === n.key ? "active" : ""}`}
-              onClick={() => onNavigate(n.key)}
+              className={`sb-nav-item ${view === n.key ? "active" : ""} ${n.disabled ? "disabled" : ""}`}
+              disabled={n.disabled}
+              title={n.disabled ? "Coming soon" : undefined}
+              onClick={() => !n.disabled && onNavigate(n.key as DashView)}
             >
               <span className="sb-nav-icon">{n.icon}</span>
               {n.label}

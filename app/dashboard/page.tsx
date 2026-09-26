@@ -286,8 +286,8 @@ function DashboardInner() {
     <div className="app-shell">
       <Sidebar view={view} onNavigate={setView} user={user} planName={planName} onLogout={logout} />
 
-      <main className="sb-main">
-        <div className="mk-wrap">
+      <main className={`sb-main ${view === "create" ? "sb-main-full" : ""}`}>
+        <div className={view === "create" ? "" : "mk-wrap"}>
           {view === "create" && <MotionStudio onToast={showToast} />}
 
           {view === "capture" && (

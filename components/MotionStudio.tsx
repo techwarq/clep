@@ -325,7 +325,7 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
   const [input, setInput] = useState("");
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
-  const [tab, setTab] = useState<"content" | "style">("content");
+  const [tab, setTab] = useState<"preview" | "content" | "style">("preview");
   const [stills, setStills] = useState<{ type: string; url: string }[] | null>(null);
   const [job, setJob] = useState<MotionJob | null>(null);
   const [usage, setUsage] = useState<Usage | null>(null);
@@ -471,288 +471,338 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
     }
   };
 
-  const brandColors = (draft?.controls.colors as Record<string, string> | undefined) ?? {};
+  const newVideo = () => {
+    setDraft(null);
+    setMsgs([]);
+    setStills(null);
+    setJob(null);
+    setInput("");
+    setTab("preview");
+  };
 
-  return (
-    <div className="ms">
-      <div className="mk-pagehead">
-        <div>
-          <h1>Create</h1>
-          <p>Describe the video. Pick a look. Ship it today.</p>
-        </div>
-        <span className="ms-headchips">
+  const brandColors = (draft?.controls.colors as Record<string, string> | undefined) ?? {};
+  const started = msgs.length > 0 || !!draft;
+  const jobBusy = !!job && job.status !== "done" && job.status !== "error";
+
+  const composer = (big: boolean) => (
+    <div className={`cx-composer ${big ? "big" : ""}`}>
+      <textarea
+        className="cx-input"
+        rows={big ? 3 : 2}
+        placeholder={
+          draft
+            ? "Tell me what to change — “make it calmer”, “vertical for TikTok”…"
+            : "What are you launching? Describe the video you want…"
+        }
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            void send();
+          }
+        }}
+      />
+      <div className="cx-row">
+        <label className="cx-url" title="Your site — we pull colors, fonts, logo and screenshots">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden>
+            <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+          </svg>
+          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="yoursite.com" aria-label="Your site URL" />
+        </label>
+        <button className="cx-send" disabled={!!busy || !input.trim()} onClick={() => void send()} aria-label="Send">
+          {busy ? <i className="mk-spin" /> : "↑"}
+        </button>
+      </div>
+    </div>
+  );
+
+  const templateCards = (
+    <div className="cx-tpls">
+      {templates.map((t) => (
+        <button
+          type="button"
+          key={t.id}
+          className={`cx-tpl ${draft?.template === t.id ? "active" : ""}`}
+          onClick={() => pickTemplate(t)}
+          onMouseEnter={(e) => e.currentTarget.querySelector("video")?.play().catch(() => {})}
+          onMouseLeave={(e) => {
+            const v = e.currentTarget.querySelector("video");
+            if (v) {
+              v.pause();
+              v.currentTime = 0;
+            }
+          }}
+        >
+          <span className="cx-tpl-media">
+            {t.example?.video ? (
+              <video src={motionFile(t.example.video)} poster={motionFile(t.example.poster)} muted loop playsInline preload="metadata" />
+            ) : null}
+          </span>
+          <b>{t.name}</b>
+          <span>{t.bestFor}</span>
+        </button>
+      ))}
+    </div>
+  );
+
+  /* ---------- empty state: centered, like a chat home ---------- */
+  if (!started) {
+    return (
+      <div className="cx cx-home">
+        <div className="cx-home-top">
           {usage && (
             <span className="ms-usage" title={`${usage.plan} plan`}>
               {usage.videos}/{usage.limit} videos this month
             </span>
           )}
-          {brand && (
+        </div>
+        <div className="cx-home-center">
+          <h1>What are you launching?</h1>
+          <p>Describe the video, drop your site, and Clep directs it in your brand.</p>
+          {apiErr && <p className="mk-form-error">{apiErr}</p>}
+          {composer(true)}
+          <div className="cx-suggest">
+            {SUGGESTIONS.map((sg) => (
+              <button key={sg} type="button" onClick={() => setInput(sg)}>
+                {sg}
+              </button>
+            ))}
+          </div>
+          <div className="cx-home-tpls">
+            <span className="cx-label">Or start from a template</span>
+            {templateCards}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ---------- workspace: chat left, canvas right ---------- */
+  return (
+    <div className="cx cx-split">
+      <section className="cx-chat">
+        <header className="cx-chat-head">
+          {brand ? (
             <span className="ms-brandchip" title={brand.url}>
               <i /> {brand.name}
             </span>
+          ) : (
+            <span className="cx-title">New video</span>
           )}
-        </span>
-      </div>
+          <button className="cx-new" onClick={newVideo} title="Start a new video">
+            ＋ New
+          </button>
+        </header>
+        <div className="cx-thread" ref={threadRef}>
+          {msgs.map((m, i) => (
+            <div key={i} className={`cx-msg ${m.role}`}>
+              {m.role === "assistant" && <span className="ms-ava">✦</span>}
+              <p>{m.content}</p>
+            </div>
+          ))}
+          {busy && (
+            <div className="cx-msg assistant">
+              <span className="ms-ava">✦</span>
+              <p className="ms-busy">
+                <i className="mk-spin" /> {busy}
+              </p>
+            </div>
+          )}
+        </div>
+        <div className="cx-chat-foot">{composer(false)}</div>
+      </section>
 
-      {apiErr && (
-        <section className="mk-card">
-          <div className="mk-card-body">
-            <p className="mk-form-error" style={{ margin: 0 }}>{apiErr}</p>
-          </div>
-        </section>
-      )}
-
-      {/* CHAT */}
-      <section className="mk-card ms-chat">
-        {msgs.length > 0 && (
-          <div className="ms-thread" ref={threadRef}>
-            {msgs.map((m, i) => (
-              <div key={i} className={`ms-msg ${m.role}`}>
-                {m.role === "assistant" && <span className="ms-ava">✦</span>}
-                <p>{m.content}</p>
-              </div>
+      <section className="cx-canvas">
+        <header className="cx-canvas-head">
+          <div className="cx-tabs">
+            {(["preview", "content", "style"] as const).map((t) => (
+              <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)} disabled={t !== "preview" && !(draft && tpl && controls)}>
+                {t[0].toUpperCase() + t.slice(1)}
+              </button>
             ))}
-            {busy && (
-              <div className="ms-msg assistant">
-                <span className="ms-ava">✦</span>
-                <p className="ms-busy">
-                  <i className="mk-spin" /> {busy}
-                </p>
-              </div>
-            )}
           </div>
-        )}
-        <div className="ms-composer">
-          <textarea
-            className="ms-input"
-            rows={msgs.length ? 1 : 2}
-            placeholder={draft ? "Tell me what to change — “make it calmer”, “vertical for TikTok”, “new CTA: Join the beta”" : "What are you launching? Describe the video you want…"}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                void send();
-              }
-            }}
-          />
-          <div className="ms-composer-row">
-            <label className="ms-url">
-              <span aria-hidden>🔗</span>
-              <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="yoursite.com" aria-label="Your site URL" />
-            </label>
-            <button className="mk-btn-dark ms-send" disabled={!!busy || !input.trim()} onClick={() => void send()}>
-              {busy ? "Working…" : draft ? "Update →" : "Create →"}
+          {templates.length > 0 && (
+            <select
+              className="cx-tplselect"
+              value={draft?.template ?? ""}
+              onChange={(e) => {
+                const t = templates.find((x) => x.id === e.target.value);
+                if (t) pickTemplate(t);
+              }}
+              aria-label="Template"
+            >
+              {!draft && <option value="">Pick a template</option>}
+              {draft?.template === "custom" && <option value="custom">Custom</option>}
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          )}
+          <div className="cx-canvas-actions">
+            <button className="mk-btn-light" disabled={!!busy || !brand || !draft} onClick={() => void refreshPreview()}>
+              {stills ? "Refresh storyboard" : "Storyboard"}
+            </button>
+            <button className="mk-btn-dark" disabled={!brand || !draft || jobBusy} onClick={() => void render()}>
+              Render →
             </button>
           </div>
-          {!msgs.length && (
-            <div className="ms-suggest">
-              {SUGGESTIONS.map((s) => (
-                <button key={s} type="button" onClick={() => setInput(s)}>
-                  {s}
-                </button>
+        </header>
+
+        <div className="cx-canvas-body">
+          {tab === "preview" && (
+            <div className="cx-preview">
+              <div className="ms-stage">
+                {job?.status === "done" && job.video ? (
+                  <video src={motionFile(job.video)} controls autoPlay playsInline />
+                ) : stills && stills.length ? (
+                  <div className="ms-stills">
+                    {stills.map((st, i) => (
+                      <figure key={i}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={st.url} alt={st.type} />
+                        <figcaption>{String(i + 1).padStart(2, "0")} · {st.type.replace(/_/g, " ")}</figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                ) : tpl?.example?.video ? (
+                  <video src={motionFile(tpl.example.video)} poster={motionFile(tpl.example.poster)} muted loop autoPlay playsInline />
+                ) : (
+                  <div className="cx-stage-empty">
+                    {busy ? (
+                      <>
+                        <i className="mk-spin" /> {busy}
+                      </>
+                    ) : (
+                      "Your video shows up here."
+                    )}
+                  </div>
+                )}
+                {jobBusy && job && (
+                  <div className="ms-progress">
+                    <i className="mk-spin" />{" "}
+                    {job.status === "queued" && job.queuePosition ? `Queued — ${job.queuePosition} ahead of you` : JOB_LABEL[job.status] ?? "Working…"}
+                    <span className={`ms-bar ${job.status === "rendering" ? "ms-bar-live" : ""}`}>
+                      <span style={{ width: `${Math.round(job.progress * 100)}%` }} />
+                    </span>
+                  </div>
+                )}
+              </div>
+              <p className="ms-caption">
+                {job?.status === "done"
+                  ? "Your video is ready."
+                  : job?.status === "error"
+                    ? `Render failed: ${job.error}`
+                    : stills
+                      ? "Storyboard — one frame per scene. Edit in Content or Style, or just ask in the chat."
+                      : tpl?.example
+                        ? `Example: ${tpl.example.brand}. Your version uses your brand.`
+                        : !brand
+                          ? "Add your site URL in the chat box to preview and render with your brand."
+                          : "Hit Storyboard to see your video frame by frame."}
+              </p>
+              {job?.status === "done" && (
+                <div className="ms-actions">
+                  {(job.outputs?.length ? job.outputs : job.video ? [{ format: String(ctl("format") || "16:9"), out: job.video, bytes: 0 }] : []).map((o) => (
+                    <a
+                      key={o.out}
+                      className="mk-btn-light"
+                      href={`${motionFile(o.out)}?dl=${encodeURIComponent(`${brand?.name ?? "clep"}-${draft?.template ?? "video"}-${o.format.replace(":", "x")}.mp4`)}`}
+                    >
+                      Download {o.format}
+                    </a>
+                  ))}
+                </div>
+              )}
+              {!draft && (
+                <div className="cx-home-tpls">
+                  <span className="cx-label">Pick a look</span>
+                  {templateCards}
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === "content" && draft && tpl && (
+            <div className="cx-panel">
+              {tpl.id === "custom" ? (
+                <BeatsEditor beats={(draft.values.beats as Beat[] | undefined) ?? []} onChange={(b) => setValue("beats", b)} brand={brand} onUpload={upload} />
+              ) : (
+                Object.entries(tpl.slots).map(([k, sl]) => (
+                  <SlotField key={k} id={`slot-${k}`} slot={sl} value={draft.values[k]} onChange={(v) => setValue(k, v)} brand={brand} onUpload={upload} />
+                ))
+              )}
+            </div>
+          )}
+
+          {tab === "style" && draft && controls && (
+            <div className="cx-panel">
+              <div className="ms-grid2">
+                <div className="mk-field">
+                  <label className="mk-flabel" htmlFor="c-font">Fonts</label>
+                  <select id="c-font" className="mk-input" value={ctl("fontPairing")} onChange={(e) => setControl("fontPairing", e.target.value)}>
+                    {Object.entries(controls.fontPairings).map(([k, v]) => (
+                      <option key={k} value={k}>{v.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mk-field">
+                  <label className="mk-flabel" htmlFor="c-format">Format</label>
+                  <select id="c-format" className="mk-input" value={ctl("format")} onChange={(e) => setControl("format", e.target.value)}>
+                    {Object.keys(controls.formats).map((k) => (
+                      <option key={k} value={k}>{k}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="mk-field">
+                <span className="mk-flabel">Backdrop</span>
+                <div className="ms-chips">
+                  {Object.entries(controls.backdrops).map(([k, v]) => (
+                    <button key={k} type="button" className={ctl("backdrop") === k ? "active" : ""} onClick={() => setControl("backdrop", k)}>
+                      <i style={{ background: v.colors ? `linear-gradient(135deg, ${v.colors.join(",")})` : undefined }} className={`ms-sw ms-sw-${v.kind}`} />
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {(
+                [
+                  ["pace", "Pace", Object.keys(controls.pace)],
+                  ["textAnim", "Text animation", controls.textAnims],
+                  ["transition", "Transitions", Object.keys(controls.transitions)],
+                  ["camera", "Camera", Object.keys(controls.camera)],
+                ] as [string, string, string[]][]
+              ).map(([k, label, opts]) => (
+                <div className="mk-field" key={k}>
+                  <span className="mk-flabel">{label}</span>
+                  <div className="ms-seg">
+                    {opts.map((o) => (
+                      <button key={o} type="button" className={ctl(k) === o ? "active" : ""} onClick={() => setControl(k, o)}>
+                        {o}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
+              <div className="mk-field">
+                <span className="mk-flabel">Colors</span>
+                <div className="mk-dots-row">
+                  {(["background", "foreground", "primary", "accent"] as const).map((k) => (
+                    <label key={k} className="mk-dotpick" title={k}>
+                      <input type="color" value={brandColors[k] ?? "#000000"} onChange={(e) => setControl("colors", { ...brandColors, [k]: e.target.value })} aria-label={`${k} color`} />
+                      <span className="mk-mono">{k}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="mk-hint">Blank colors use your site&apos;s own palette.</p>
+              </div>
             </div>
           )}
         </div>
       </section>
-
-      {/* TEMPLATES */}
-      <div className="ms-sechead">
-        <h2>Templates</h2>
-        <span>Directed looks from what ships — hover to play.</span>
-      </div>
-      <div className="ms-tpls">
-        {templates.map((t) => (
-          <button
-            type="button"
-            key={t.id}
-            className={`ms-tpl ${draft?.template === t.id ? "active" : ""}`}
-            onClick={() => pickTemplate(t)}
-            onMouseEnter={(e) => e.currentTarget.querySelector("video")?.play().catch(() => {})}
-            onMouseLeave={(e) => {
-              const v = e.currentTarget.querySelector("video");
-              if (v) {
-                v.pause();
-                v.currentTime = 0;
-              }
-            }}
-          >
-            <span className="ms-tpl-media">
-              {t.example?.video ? (
-                <video src={motionFile(t.example.video)} poster={motionFile(t.example.poster)} muted loop playsInline preload="metadata" />
-              ) : null}
-            </span>
-            <b>{t.name}</b>
-            <span>{t.bestFor}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* EDITOR */}
-      {draft && tpl && controls && (
-        <div className="ms-work">
-          <section className="mk-card ms-editor">
-            <div className="ms-tabs">
-              <button className={tab === "content" ? "active" : ""} onClick={() => setTab("content")}>
-                Content
-              </button>
-              <button className={tab === "style" ? "active" : ""} onClick={() => setTab("style")}>
-                Style
-              </button>
-              <span className="ms-tplname">{tpl.name}</span>
-            </div>
-            <div className="mk-card-body">
-              {tab === "content" && tpl.id === "custom" && (
-                <BeatsEditor
-                  beats={(draft.values.beats as Beat[] | undefined) ?? []}
-                  onChange={(b) => setValue("beats", b)}
-                  brand={brand}
-                  onUpload={upload}
-                />
-              )}
-              {tab === "content" &&
-                tpl.id !== "custom" &&
-                Object.entries(tpl.slots).map(([k, s]) => (
-                  <SlotField key={k} id={`slot-${k}`} slot={s} value={draft.values[k]} onChange={(v) => setValue(k, v)} brand={brand} onUpload={upload} />
-                ))}
-              {tab === "style" && (
-                <>
-                  <div className="ms-grid2">
-                    <div className="mk-field">
-                      <label className="mk-flabel" htmlFor="c-font">Fonts</label>
-                      <select id="c-font" className="mk-input" value={ctl("fontPairing")} onChange={(e) => setControl("fontPairing", e.target.value)}>
-                        {Object.entries(controls.fontPairings).map(([k, v]) => (
-                          <option key={k} value={k}>{v.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="mk-field">
-                      <label className="mk-flabel" htmlFor="c-format">Format</label>
-                      <select id="c-format" className="mk-input" value={ctl("format")} onChange={(e) => setControl("format", e.target.value)}>
-                        {Object.keys(controls.formats).map((k) => (
-                          <option key={k} value={k}>{k}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="mk-field">
-                    <span className="mk-flabel">Backdrop</span>
-                    <div className="ms-chips">
-                      {Object.entries(controls.backdrops).map(([k, v]) => (
-                        <button key={k} type="button" className={ctl("backdrop") === k ? "active" : ""} onClick={() => setControl("backdrop", k)}>
-                          <i
-                            style={{
-                              background: v.colors ? `linear-gradient(135deg, ${v.colors.join(",")})` : undefined,
-                            }}
-                            className={`ms-sw ms-sw-${v.kind}`}
-                          />
-                          {v.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {(
-                    [
-                      ["pace", "Pace", Object.keys(controls.pace)],
-                      ["textAnim", "Text animation", controls.textAnims],
-                      ["transition", "Transitions", Object.keys(controls.transitions)],
-                      ["camera", "Camera", Object.keys(controls.camera)],
-                    ] as [string, string, string[]][]
-                  ).map(([k, label, opts]) => (
-                    <div className="mk-field" key={k}>
-                      <span className="mk-flabel">{label}</span>
-                      <div className="ms-seg">
-                        {opts.map((o) => (
-                          <button key={o} type="button" className={ctl(k) === o ? "active" : ""} onClick={() => setControl(k, o)}>
-                            {o}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                  <div className="mk-field">
-                    <span className="mk-flabel">Colors</span>
-                    <div className="mk-dots-row">
-                      {(["background", "foreground", "primary", "accent"] as const).map((k) => (
-                        <label key={k} className="mk-dotpick" title={k}>
-                          <input
-                            type="color"
-                            value={brandColors[k] ?? "#000000"}
-                            onChange={(e) => setControl("colors", { ...brandColors, [k]: e.target.value })}
-                            aria-label={`${k} color`}
-                          />
-                          <span className="mk-mono">{k}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <p className="mk-hint">Blank colors use your site&apos;s own palette.</p>
-                  </div>
-                </>
-              )}
-            </div>
-          </section>
-
-          <section className="ms-preview">
-            <div className="ms-stage">
-              {job?.status === "done" && job.video ? (
-                <video src={motionFile(job.video)} controls autoPlay playsInline />
-              ) : stills && stills.length ? (
-                <div className="ms-stills">
-                  {stills.map((s, i) => (
-                    <figure key={i}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={s.url} alt={s.type} />
-                      <figcaption>{String(i + 1).padStart(2, "0")} · {s.type.replace(/_/g, " ")}</figcaption>
-                    </figure>
-                  ))}
-                </div>
-              ) : tpl.example?.video ? (
-                <video src={motionFile(tpl.example.video)} poster={motionFile(tpl.example.poster)} muted loop autoPlay playsInline />
-              ) : null}
-              {job && job.status !== "done" && job.status !== "error" && (
-                <div className="ms-progress">
-                  <i className="mk-spin" />{" "}
-                  {job.status === "queued" && job.queuePosition ? `Queued — ${job.queuePosition} ahead of you` : JOB_LABEL[job.status] ?? "Working…"}
-                  <span className={`ms-bar ${job.status === "rendering" ? "ms-bar-live" : ""}`}>
-                    <span style={{ width: `${Math.round(job.progress * 100)}%` }} />
-                  </span>
-                </div>
-              )}
-            </div>
-            <p className="ms-caption">
-              {job?.status === "done"
-                ? "Your video is ready."
-                : job?.status === "error"
-                  ? `Render failed: ${job.error}`
-                  : stills
-                    ? "Storyboard — one frame per scene. Edit fields, then refresh or render."
-                    : tpl.example
-                      ? `Example: ${tpl.example.brand}. Your version uses your brand.`
-                      : "Preview the storyboard to see your video frame by frame."}
-            </p>
-            <div className="ms-actions">
-              <button className="mk-btn-light" disabled={!!busy || !brand} onClick={() => void refreshPreview()}>
-                {stills ? "Refresh storyboard" : "Preview storyboard"}
-              </button>
-              <button className="mk-btn-dark" disabled={!brand || (!!job && job.status !== "done" && job.status !== "error")} onClick={() => void render()}>
-                Render video →
-              </button>
-              {job?.status === "done" &&
-                (job.outputs?.length ? job.outputs : job.video ? [{ format: String(ctl("format") || "16:9"), out: job.video, bytes: 0 }] : []).map((o) => (
-                  <a
-                    key={o.out}
-                    className="mk-btn-light"
-                    href={`${motionFile(o.out)}?dl=${encodeURIComponent(`${brand?.name ?? "clep"}-${draft?.template ?? "video"}-${o.format.replace(":", "x")}.mp4`)}`}
-                  >
-                    Download {o.format}
-                  </a>
-                ))}
-            </div>
-            {!brand && <p className="mk-hint">Add your site URL in the chat box to preview and render with your brand.</p>}
-          </section>
-        </div>
-      )}
     </div>
   );
 }
