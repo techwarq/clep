@@ -2310,3 +2310,17 @@ body:has(.lp)::before { display: none; }
   .cx-canvas { height: auto; }
   .cx-canvas-actions { margin-left: 0; width: 100%; }
 }
+
+/* hero arc → swipeable strip on phones */
+@media (max-width: 640px) {
+  .arc { justify-content: flex-start; gap: 12px; margin: 34px -16px 0; padding: 10px 16px 18px; height: auto;
+    perspective: none; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 16px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .arc::-webkit-scrollbar { display: none; }
+  .arc-card, .a-c, .a-l1, .a-r1, .a-l2, .a-r2 { display: block; width: 80vw; --r: 0deg; --s: 1; scroll-snap-align: start; opacity: 1;
+    animation: none; transform: none; box-shadow: 0 18px 40px rgba(8,40,110,.35); }
+  .a-c { order: -1; }
+  .arc-tag { display: inline-block; font-size: 9.5px; left: 10px; bottom: 10px; }
+  .arc-make { left: 10px; right: auto; bottom: auto; top: 10px; transform: none; font-size: 12px; padding: 3px 11px 3px 3px; gap: 6px; }
+  .arc-make i { width: 20px; height: 20px; font-size: 14px; }
+  .sky-proof { margin-top: 18px; }
+}
