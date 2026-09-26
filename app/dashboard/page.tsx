@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar, { type DashView } from "../../components/Sidebar";
+import MotionStudio from "../../components/MotionStudio";
 import {
   clearApiKey,
   clearClepSession,
@@ -55,7 +56,9 @@ export default function Dashboard() {
 function DashboardInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialView = (searchParams.get("view") as DashView | null) ?? "start";
+  // Legacy links: ?view=start → Capture (plugin setup lives there now).
+  const rawView = searchParams.get("view");
+  const initialView = ((rawView === "start" ? "capture" : rawView) as DashView | null) ?? "create";
   const [view, setView] = useState<DashView>(initialView);
   const [user, setUser] = useState<ClepUser | null>(null);
   const [billing, setBilling] = useState<BillingInfo | null>(null);
@@ -285,11 +288,17 @@ function DashboardInner() {
 
       <main className="sb-main">
         <div className="mk-wrap">
-          {view === "start" && (
+          {view === "create" && <MotionStudio onToast={showToast} />}
+
+          {view === "capture" && (
             <>
               <div className="mk-hero">
-                <h1>Welcome to Clep</h1>
-                <p>One plugin. Every clip your launch needs.</p>
+                <span className="cap-soon">Coming soon</span>
+                <h1>Clep Capture</h1>
+                <p>
+                  Record any feature straight from your code — Claude Code finds it, drives the real UI, and hands the
+                  recording to Create. Early-access setup below.
+                </p>
               </div>
 
               <section className="mk-card">
@@ -391,7 +400,7 @@ function DashboardInner() {
             </>
           )}
 
-          {view === "create" && (
+          {view === "capture" && (
             <>
               <div className="mk-pagehead">
                 <div>
@@ -815,13 +824,13 @@ function DashboardInner() {
                     <p className="mk-muted">
                       {!storedKey
                         ? "Create an API key first, then run the plugin from Get Started."
-                        : "Run the plugin from Get Started, then come back here."}
+                        : "Run the Capture plugin, then come back here."}
                     </p>
                     <button
                       className="mk-btn-dark"
-                      onClick={() => setView(!storedKey ? "keys" : "start")}
+                      onClick={() => setView(!storedKey ? "keys" : "capture")}
                     >
-                      {!storedKey ? "Create API key →" : "Go to Get Started →"}
+                      {!storedKey ? "Create API key →" : "Go to Capture →"}
                     </button>
                   </div>
                 ) : (

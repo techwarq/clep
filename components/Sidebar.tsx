@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { ClepUser } from "../lib/api";
 import { ClepMark } from "./Logo";
 
-export type DashView = "start" | "create" | "keys" | "billing" | "usage";
+export type DashView = "create" | "capture" | "keys" | "billing" | "usage";
 
 function Icon({ d, extra }: { d: string; extra?: string }) {
   return (
@@ -15,16 +15,17 @@ function Icon({ d, extra }: { d: string; extra?: string }) {
   );
 }
 
-const NAV: { key: DashView; label: string; icon: React.ReactNode }[] = [
-  {
-    key: "start",
-    label: "Get Started",
-    icon: <Icon d="M5 15c-1.6 1.6-2 5-2 5s3.4-.4 5-2M14 4c3-2 8-2 8-2s0 5-2 8l-7.5 7.5-5-5L14 4z" extra="M15 9h.01" />,
-  },
+const NAV: { key: DashView; label: string; icon: React.ReactNode; badge?: string }[] = [
   {
     key: "create",
-    label: "New Clip",
-    icon: <Icon d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8.5v7M8.5 12h7" />,
+    label: "Create",
+    icon: <Icon d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3z" extra="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z" />,
+  },
+  {
+    key: "capture",
+    label: "Capture",
+    badge: "Soon",
+    icon: <Icon d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-9z" extra="M10 9.5v5l4-2.5-4-2.5z" />,
   },
   {
     key: "keys",
@@ -85,6 +86,7 @@ export default function Sidebar({
             >
               <span className="sb-nav-icon">{n.icon}</span>
               {n.label}
+              {n.badge && <span className="sb-badge">{n.badge}</span>}
             </button>
           ))}
         </nav>
