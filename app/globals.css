@@ -2513,3 +2513,11 @@ body:has(.lp)::before { display: none; }
   .demo-play-text { padding: 6px 10px; }
   .demo-play-text b { font-size: 13px; }
 }
+
+/* capture: step cards instead of terminal commands */
+.cap-steps { display: grid; gap: 10px; position: relative; }
+.cap-step { display: flex; gap: 14px; align-items: flex-start; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); border-radius: 16px; padding: 16px 18px; }
+.cap-step > span { font-family: var(--mono); font-size: 12px; color: var(--lime-ink); background: var(--lime); border-radius: 8px; padding: 3px 7px; flex: none; }
+.cap-step b { display: block; color: #fff; font-family: var(--font-tight, var(--font)); font-weight: 500; font-size: 16px; letter-spacing: -0.02em; }
+.cap-step p { margin: 2px 0 0 !important; font-size: 13.5px !important; color: #9aa6a0 !important; }
+@media (max-width: 900px) { .lp .lx-capture { grid-template-columns: 1fr; } }

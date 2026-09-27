@@ -75,32 +75,13 @@ function DemoPlayer() {
 }
 
 export default function Page() {
-  const [toast, setToast] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [rot, setRot] = useState(0);
-
-  const showToast = (m: string) => {
-    setToast(m);
-    window.setTimeout(() => setToast(null), 2600);
-  };
 
   useEffect(() => {
     const t = window.setInterval(() => setRot((i) => (i + 1) % ROTATE.length), 2600);
     return () => window.clearInterval(t);
   }, []);
-
-  const INSTALL_CMDS = `/plugin marketplace add techwarq/clep-plugin
-/plugin install clep@clep-marketplace`;
-
-  const copyCmd = async () => {
-    try {
-      await navigator.clipboard.writeText(INSTALL_CMDS);
-    } catch {}
-    setCopied(true);
-    showToast("Copied — Clep Capture is in early access");
-    window.setTimeout(() => setCopied(false), 1600);
-  };
 
   const navGo = (id: string) => {
     setMenuOpen(false);
@@ -396,17 +377,6 @@ export default function Page() {
                 A Claude Code plugin that finds a feature in your codebase, drives the real UI in a browser — cursor and
                 all — and sends the recording to Motion. One command: <code>/clep</code>.
               </p>
-              <div className="lx-capture-steps">
-                <span>
-                  <b>01</b> Finds the feature
-                </span>
-                <span>
-                  <b>02</b> Runs it live
-                </span>
-                <span>
-                  <b>03</b> Ships the video
-                </span>
-              </div>
               <a className="pill-btn pill-lime" href={SIGNUP_HREF}>
                 Get early access
                 <i className="pill-ico" aria-hidden>
@@ -414,34 +384,20 @@ export default function Page() {
                 </i>
               </a>
             </div>
-            <div
-              className="install-box lx-capture-box"
-              role="button"
-              tabIndex={0}
-              onClick={copyCmd}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") copyCmd();
-              }}
-              aria-label="Copy plugin install commands"
-              title="Click to copy"
-            >
-              <div className="install-lines">
-                <div className="install-line">
-                  <span className="cmd-dollar">$</span>
-                  <code>/plugin marketplace add techwarq/clep-plugin</code>
+            <div className="cap-steps">
+              {[
+                ["01", "Finds the feature", "Clep locates it in your codebase — no recording setup."],
+                ["02", "Runs it live", "Drives the real UI in a browser, cursor and all."],
+                ["03", "Ships the video", "Edited, graded, ready to post in your brand."],
+              ].map(([n, t, d]) => (
+                <div key={n} className="cap-step">
+                  <span>{n}</span>
+                  <div>
+                    <b>{t}</b>
+                    <p>{d}</p>
+                  </div>
                 </div>
-                <div className="install-line">
-                  <span className="cmd-dollar">$</span>
-                  <code>/plugin install clep@clep-marketplace</code>
-                </div>
-                <div className="install-line">
-                  <span className="cmd-dollar">$</span>
-                  <code>/clep make a clip of the signup flow</code>
-                </div>
-              </div>
-              <span className="install-copy" aria-hidden>
-                {copied ? "✓" : "⧉"}
-              </span>
+              ))}
             </div>
           </div>
         </Reveal>
@@ -472,10 +428,10 @@ export default function Page() {
                 Pro <i className="pc-pop">Popular</i>
               </span>
               <b className="bn-big">
-                $9<small>/ month</small>
+                $12<small>/ month</small>
               </b>
               <ul>
-                <li>50 videos / month</li>
+                <li>30 videos / month</li>
                 <li>1080p60 exports</li>
                 <li>Priority rendering</li>
               </ul>
@@ -486,10 +442,10 @@ export default function Page() {
             <div className="pc">
               <span className="bn-k">Studio</span>
               <b className="bn-big">
-                $19<small>/ month</small>
+                $29<small>/ month</small>
               </b>
               <ul>
-                <li>150 videos / month</li>
+                <li>100 videos / month</li>
                 <li>Everything in Pro</li>
                 <li>Team workspace</li>
               </ul>
@@ -554,7 +510,6 @@ export default function Page() {
         </footer>
       </main>
 
-      {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }
