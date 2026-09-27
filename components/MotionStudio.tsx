@@ -27,6 +27,7 @@ import {
   type Usage,
   type Video,
 } from "../lib/motion";
+import { ClepMark } from "./Logo";
 
 type Msg = { role: "user" | "assistant"; content: string };
 type Brand = { project: string; name: string; url: string; screenshots: string[]; shotPaths: string[] };
@@ -785,13 +786,13 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
         <div className="cx-thread" ref={threadRef}>
           {msgs.map((m, i) => (
             <div key={i} className={`cx-msg ${m.role}`}>
-              {m.role === "assistant" && <span className="ms-ava">✦</span>}
+              {m.role === "assistant" && <span className="cx-ava"><ClepMark size={28} /></span>}
               <p>{m.content}</p>
             </div>
           ))}
           {busy && (
             <div className="cx-msg assistant">
-              <span className="ms-ava">✦</span>
+              <span className="cx-ava thinking"><ClepMark size={28} /></span>
               <p className="ms-busy">
                 <i className="mk-spin" /> {busy}
               </p>
@@ -863,13 +864,20 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
                 ) : tpl?.example?.video ? (
                   <video src={motionFile(tpl.example.video)} poster={motionFile(tpl.example.poster)} muted loop autoPlay playsInline />
                 ) : (
-                  <div className="cx-stage-empty">
-                    {busy ? (
-                      <>
-                        <i className="mk-spin" /> {busy}
-                      </>
-                    ) : (
-                      "Your video shows up here."
+                  <div className={`cx-stage-empty ${busy ? "busy" : ""}`}>
+                    <span className="cx-stage-glow" aria-hidden />
+                    <span className="cx-stage-mark" aria-hidden>
+                      <ClepMark size={44} />
+                    </span>
+                    <b>{busy ?? "Your video shows up here"}</b>
+                    <span className="cx-stage-sub">{busy ? "This usually takes a few seconds." : "Describe it in the chat, or pick a look below."}</span>
+                    {busy && (
+                      <span className="cx-stage-scenes" aria-hidden>
+                        <i />
+                        <i />
+                        <i />
+                        <i />
+                      </span>
                     )}
                   </div>
                 )}
