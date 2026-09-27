@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar, { type DashView } from "../../components/Sidebar";
 import MotionStudio from "../../components/MotionStudio";
+import VideosView from "../../components/VideosView";
 import {
   clearApiKey,
   clearClepSession,
@@ -289,6 +290,7 @@ function DashboardInner() {
       <main className={`sb-main ${view === "create" ? "sb-main-full" : ""}`}>
         <div className={view === "create" ? "" : "mk-wrap"}>
           {view === "create" && <MotionStudio onToast={showToast} />}
+          {view === "videos" && <VideosView onToast={showToast} onCreate={() => setView("create")} />}
 
           {view === "capture" && (
             <>

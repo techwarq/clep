@@ -3,6 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   chatTurn,
+  createDraft,
+  getDraft,
+  getProject,
+  hideVideo,
+  listDrafts,
+  listVideos,
+  saveDraft,
   extractBrand,
   getJob,
   getTemplates,
@@ -18,12 +25,14 @@ import {
   type MotionTemplate,
   type Slot,
   type Usage,
+  type Video,
 } from "../lib/motion";
 
 type Msg = { role: "user" | "assistant"; content: string };
 type Brand = { project: string; name: string; url: string; screenshots: string[]; shotPaths: string[] };
 
-const LS = "clep_motion_state_v2";
+// Only which draft is open + the URL box live in the browser; the draft itself is saved server-side.
+const LS = "clep_motion_state_v3";
 
 // A custom video has no template: the director wrote a beat sheet and the engine directs it.
 const CUSTOM_TPL: MotionTemplate = {
@@ -323,14 +332,47 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
   const [draft, setDraft] = useState<Draft | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
+  // Composer extras: aspect ratio before a draft exists, and files attached to the next message.
+  const [pendingFormat, setPendingFormat] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<{ name: string; path: string; kind: "video" | "image" }[]>([]);
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
-  const [tab, setTab] = useState<"preview" | "content" | "style">("preview");
+  const [tab, setTab] = useState<"preview" | "content" | "style" | "videos">("preview");
   const [stills, setStills] = useState<{ type: string; url: string }[] | null>(null);
   const [job, setJob] = useState<MotionJob | null>(null);
   const [usage, setUsage] = useState<Usage | null>(null);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [videos, setVideos] = useState<Video[]>([]);
   const threadRef = useRef<HTMLDivElement>(null);
   const hydrated = useRef(false);
+  const dirty = useRef(false); // set by manual edits only — chat turns are saved by the server
+
+  const refreshLibrary = () => {
+    listVideos().then((r) => setVideos(r.videos)).catch(() => {});
+    getUsage().then(setUsage).catch(() => {});
+  };
+
+  const openDraft = async (id: string) => {
+    const d = await getDraft(id);
+    setDraftId(d.id);
+    setDraft(d.template ? { template: d.template, values: d.values, controls: d.controls } : null);
+    setMsgs(d.messages ?? []);
+    setStills(null);
+    setJob(null);
+    if (d.project) {
+      const p = await getProject(d.project);
+      if (p.brand) {
+        setBrand({
+          project: p.id,
+          name: p.brand.name,
+          url: p.url,
+          screenshots: p.screenshots.map((x) => motionFile(x.url)!),
+          shotPaths: p.screenshots.map((x) => x.path),
+        });
+        setUrl(p.url);
+      }
+    }
+  };
 
   useEffect(() => {
     getTemplates()
@@ -340,21 +382,43 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
         setControls(r.controls);
       })
       .catch((e) => setApiErr(e instanceof Error ? e.message : String(e)));
-    getUsage().then(setUsage).catch(() => {});
-    const s = load<{ brand: Brand | null; draft: Draft | null; msgs: Msg[]; url: string }>(LS, { brand: null, draft: null, msgs: [], url: "" });
-    setBrand(s.brand);
-    setDraft(s.draft);
-    setMsgs(s.msgs);
+    refreshLibrary();
+    const s = load<{ draftId: string | null; url: string }>(LS, { draftId: null, url: "" });
     setUrl(s.url);
-    hydrated.current = true;
+    (async () => {
+      try {
+        if (s.draftId) await openDraft(s.draftId);
+      } catch {
+        // stale id (deleted draft) — start on the home screen
+      } finally {
+        hydrated.current = true;
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!hydrated.current) return;
     try {
-      window.localStorage.setItem(LS, JSON.stringify({ brand, draft, msgs: msgs.slice(-20), url }));
+      window.localStorage.setItem(LS, JSON.stringify({ draftId, url }));
     } catch {}
-  }, [brand, draft, msgs, url]);
+  }, [draftId, url]);
+
+  // Manual edits autosave (debounced); the draft row is created on the first edit if needed.
+  useEffect(() => {
+    if (!dirty.current || !draft) return;
+    const t = window.setTimeout(async () => {
+      dirty.current = false;
+      try {
+        const id = draftId ?? (await createDraft({ project: brand?.project ?? null })).id;
+        if (!draftId) setDraftId(id);
+        await saveDraft(id, { template: draft.template, values: draft.values, controls: draft.controls, project: brand?.project ?? null });
+      } catch (e) {
+        onToast(e instanceof Error ? `Couldn't save: ${e.message}` : "Couldn't save draft");
+      }
+    }, 800);
+    return () => window.clearTimeout(t);
+  }, [draft, draftId, brand, onToast]);
 
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: "smooth" });
@@ -368,8 +432,8 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
         const j = await getJob(job.id);
         setJob(j);
         if (j.status === "done") {
-          onToast("Your video is ready");
-          getUsage().then(setUsage).catch(() => {});
+          onToast("Your video is ready — saved to Your videos");
+          refreshLibrary();
         }
       } catch {}
     }, 2000);
@@ -400,19 +464,33 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
   };
 
   const send = async (text?: string) => {
-    const message = (text ?? input).trim();
-    if (!message || busy) return;
+    const typed = (text ?? input).trim();
+    if ((!typed && !attachments.length) || busy) return;
+    const message = [
+      typed || "Use the file I attached.",
+      ...attachments.map((a) => `Attached ${a.kind}: ${a.path}`),
+    ].join("\n");
     setInput("");
+    setAttachments([]);
     const next: Msg[] = [...msgs, { role: "user", content: message }];
     setMsgs(next);
     try {
       const b = await ensureBrand();
       setBusy(draft ? "Updating your video…" : "Directing your video…");
-      const r = await chatTurn({ message, project: b?.project ?? null, draft, history: next });
-      setDraft({ template: r.template, values: r.values, controls: r.controls });
+      const id = draftId ?? (await createDraft({ project: b?.project ?? null })).id;
+      if (!draftId) setDraftId(id);
+      // The server applies the turn to the saved draft and stores the thread.
+      const r = await chatTurn({ message, draft_id: id, project: b?.project ?? null });
+      // A ratio picked before the first draft rides along into it.
+      const controlsOut = pendingFormat && !draft ? { ...r.controls, format: pendingFormat } : r.controls;
+      if (controlsOut !== r.controls) {
+        dirty.current = true;
+        setPendingFormat(null);
+      }
+      setDraft({ template: r.template, values: r.values, controls: controlsOut });
       setMsgs([...next, { role: "assistant", content: r.reply }]);
       setStills(null);
-      if (b) void refreshPreview(b, { template: r.template, values: r.values, controls: r.controls });
+      if (b) void refreshPreview(b, { template: r.template, values: r.values, controls: controlsOut });
     } catch (e) {
       setMsgs([...next, { role: "assistant", content: e instanceof Error ? e.message : "Something went wrong." }]);
     } finally {
@@ -422,14 +500,23 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
 
   const pickTemplate = (t: MotionTemplate) => {
     const keep = draft?.template === t.id;
+    dirty.current = !keep;
     setDraft(keep ? draft : { template: t.id, values: {}, controls: {} });
     setStills(null);
     setJob(null);
     setMsgs((m) => [...m, { role: "assistant", content: `Switched to ${t.name}. Edit the fields, or tell me what to change.` }]);
   };
 
-  const setValue = (k: string, v: unknown) => draft && setDraft({ ...draft, values: { ...draft.values, [k]: v } });
-  const setControl = (k: string, v: unknown) => draft && setDraft({ ...draft, controls: { ...draft.controls, [k]: v } });
+  const setValue = (k: string, v: unknown) => {
+    if (!draft) return;
+    dirty.current = true;
+    setDraft({ ...draft, values: { ...draft.values, [k]: v } });
+  };
+  const setControl = (k: string, v: unknown) => {
+    if (!draft) return;
+    dirty.current = true;
+    setDraft({ ...draft, controls: { ...draft.controls, [k]: v } });
+  };
   const ctl = (k: string) => (draft?.controls[k] as string | undefined) ?? tpl?.defaults[k] ?? "";
 
   const refreshPreview = async (b = brand, d = draft) => {
@@ -449,20 +536,30 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
     if (!brand || !draft) return onToast("Add your site URL first");
     try {
       setStills(null);
-      setJob(await startRender(brand.project, draft));
+      setJob(await startRender(brand.project, draft, { draftId }));
     } catch (e) {
       onToast(e instanceof Error ? e.message : "Render failed to start");
     }
   };
 
   const upload = async (f: File) => {
-    if (!brand) {
+    let b = brand;
+    if (!b && url.trim()) {
+      try {
+        b = await ensureBrand();
+      } catch (e) {
+        onToast(e instanceof Error ? e.message : "Couldn't read your site");
+        setBusy(null);
+        return null;
+      }
+    }
+    if (!b) {
       onToast("Add your site URL first");
       return null;
     }
     try {
       setBusy(`Uploading ${f.name}…`);
-      return (await uploadAsset(brand.project, f)).path;
+      return (await uploadAsset(b.project, f)).path;
     } catch (e) {
       onToast(e instanceof Error ? e.message : "Upload failed");
       return null;
@@ -472,17 +569,69 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
   };
 
   const newVideo = () => {
+    dirty.current = false;
+    setDraftId(null);
     setDraft(null);
     setMsgs([]);
     setStills(null);
     setJob(null);
     setInput("");
+    setAttachments([]);
+    setPendingFormat(null);
     setTab("preview");
   };
 
   const brandColors = (draft?.controls.colors as Record<string, string> | undefined) ?? {};
+
+  const library = videos.length ? (
+    <div className="ms-lib">
+      {videos.map((v) => (
+        <figure key={v.id} className="ms-lib-item">
+          <video src={motionFile(v.url)} preload="metadata" muted playsInline controls />
+          <figcaption>
+            <b title={v.title}>{v.title}</b>
+            <span>
+              {v.format}
+              {v.duration ? ` · ${Math.round(v.duration)}s` : ""} · {new Date(v.created * 1000).toLocaleDateString()}
+            </span>
+            <span className="ms-lib-actions">
+              <a className="mk-mini-link" href={`${motionFile(v.url)}?dl=${encodeURIComponent(`${v.title}-${v.format.replace(":", "x")}`.replace(/[^\w.-]+/g, "-").slice(0, 80))}`}>
+                Download
+              </a>
+              {v.draft_id && (
+                <button type="button" className="mk-mini-link" onClick={() => void openDraft(v.draft_id!).then(() => setTab("preview")).catch(() => onToast("That draft was deleted"))}>
+                  Edit
+                </button>
+              )}
+              <button
+                type="button"
+                className="mk-mini-link"
+                onClick={async () => {
+                  await hideVideo(v.id).catch(() => {});
+                  setVideos((vs) => vs.filter((x) => x.id !== v.id));
+                }}
+              >
+                Remove
+              </button>
+            </span>
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  ) : (
+    <p className="mk-hint">Videos you render are kept here for good.</p>
+  );
+  const usageChip = usage && (
+    <span className="ms-usage" title={`${usage.plan} plan`}>
+      {usage.videos}/{usage.limit} videos · resets{" "}
+      {new Date(usage.period_end * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+    </span>
+  );
   const started = msgs.length > 0 || !!draft;
   const jobBusy = !!job && job.status !== "done" && job.status !== "error";
+
+  const formatOptions = controls ? Object.keys(controls.formats) : ["16:9", "9:16", "1:1", "4:5"];
+  const currentFormat = (draft ? ctl("format") : pendingFormat) || "16:9";
 
   const composer = (big: boolean) => (
     <div className={`cx-composer ${big ? "big" : ""}`}>
@@ -503,14 +652,51 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
           }
         }}
       />
+      {attachments.length > 0 && (
+        <div className="cx-attachments">
+          {attachments.map((a) => (
+            <span key={a.path} className="cx-att" title={a.path}>
+              {a.kind === "video" ? "▶" : "▣"} {a.name}
+              <button type="button" onClick={() => setAttachments((xs) => xs.filter((x) => x.path !== a.path))} aria-label={`Remove ${a.name}`}>
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
       <div className="cx-row">
+        <label className="cx-plus" title="Upload a screenshot or screen recording">
+          +
+          <input
+            type="file"
+            accept="image/*,video/mp4,video/webm,video/quicktime"
+            hidden
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (!f) return;
+              const path = await upload(f);
+              if (path) setAttachments((xs) => [...xs, { name: f.name, path, kind: f.type.startsWith("video") ? "video" : "image" }]);
+            }}
+          />
+        </label>
         <label className="cx-url" title="Your site — we pull colors, fonts, logo and screenshots">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden>
             <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
           </svg>
           <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="yoursite.com" aria-label="Your site URL" />
         </label>
-        <button className="cx-send" disabled={!!busy || !input.trim()} onClick={() => void send()} aria-label="Send">
+        <label className="cx-ratio" title="Aspect ratio">
+          <span className={`cx-ratio-ico r-${currentFormat.replace(":", "x")}`} aria-hidden />
+          <select value={currentFormat} onChange={(e) => (draft ? setControl("format", e.target.value) : setPendingFormat(e.target.value))} aria-label="Aspect ratio">
+            {formatOptions.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button className="cx-send" disabled={!!busy || (!input.trim() && !attachments.length)} onClick={() => void send()} aria-label="Send">
           {busy ? <i className="mk-spin" /> : "↑"}
         </button>
       </div>
@@ -551,11 +737,7 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
     return (
       <div className="cx cx-home">
         <div className="cx-home-top">
-          {usage && (
-            <span className="ms-usage" title={`${usage.plan} plan`}>
-              {usage.videos}/{usage.limit} videos this month
-            </span>
-          )}
+          {usageChip}
         </div>
         <div className="cx-home-center">
           <h1>What are you launching?</h1>
@@ -573,6 +755,12 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
             <span className="cx-label">Or start from a template</span>
             {templateCards}
           </div>
+          {videos.length > 0 && (
+            <div className="cx-home-tpls">
+              <span className="cx-label">Your videos</span>
+              {library}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -616,8 +804,13 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
       <section className="cx-canvas">
         <header className="cx-canvas-head">
           <div className="cx-tabs">
-            {(["preview", "content", "style"] as const).map((t) => (
-              <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)} disabled={t !== "preview" && !(draft && tpl && controls)}>
+            {(["preview", "content", "style", "videos"] as const).map((t) => (
+              <button
+                key={t}
+                className={tab === t ? "active" : ""}
+                onClick={() => setTab(t)}
+                disabled={(t === "content" || t === "style") && !(draft && tpl && controls)}
+              >
                 {t[0].toUpperCase() + t.slice(1)}
               </button>
             ))}
@@ -737,6 +930,8 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
             </div>
           )}
 
+          {tab === "videos" && <div className="cx-panel">{library}</div>}
+
           {tab === "style" && draft && controls && (
             <div className="cx-panel">
               <div className="ms-grid2">
@@ -757,6 +952,28 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
                   </select>
                 </div>
               </div>
+              {controls.looks && (
+                <div className="mk-field">
+                  <label className="mk-flabel" htmlFor="c-look">Look</label>
+                  <select
+                    id="c-look"
+                    className="mk-input"
+                    value={(draft.controls.look as string | undefined) ?? ""}
+                    onChange={(e) => {
+                      // Name only — the server loads the recipe; or ask in chat for any new look ("make it vaporwave").
+                      const { lookRecipe: _r, ...rest } = draft.controls as Record<string, unknown>;
+                      dirty.current = true;
+                      setDraft({ ...draft, controls: e.target.value ? { ...rest, look: e.target.value } : (({ look: _l, ...r }) => r)(rest) });
+                    }}
+                  >
+                    <option value="">Template default</option>
+                    {Object.entries(controls.looks).map(([k, label]) => (
+                      <option key={k} value={k}>{label}</option>
+                    ))}
+                  </select>
+                  <p className="mk-hint">Want something else? Just ask in the chat — “make it look like a comic book”.</p>
+                </div>
+              )}
               <div className="mk-field">
                 <span className="mk-flabel">Backdrop</span>
                 <div className="ms-chips">

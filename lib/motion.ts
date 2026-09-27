@@ -47,6 +47,8 @@ export interface MotionControls {
   transitions: Record<string, number>;
   camera: Record<string, number>;
   formats: Record<string, [number, number]>;
+  /** Visual looks: built-in + ones composed at runtime (name → label). */
+  looks?: Record<string, string>;
 }
 
 /** template = a template id, or "custom" (values = {title, mood, style?, seconds, beats[]}). */
@@ -85,6 +87,39 @@ export interface Usage {
   videos: number;
   limit: number;
   inflight: number;
+  period_start: number; // billing period (epoch seconds) — paid: subscription cycle, free: signup anniversary
+  period_end: number;
+}
+
+export interface SavedDraft extends Draft {
+  id: string;
+  project: string | null;
+  title: string;
+  messages: { role: "user" | "assistant"; content: string }[];
+  version: number;
+  updated: number;
+}
+
+export interface Video {
+  id: string;
+  title: string;
+  template: string | null;
+  format: string;
+  url: string; // /outputs/…mp4 — pass through motionFile()
+  bytes: number | null;
+  duration: number | null;
+  created: number;
+  project: string | null;
+  draft_id: string | null;
+}
+
+export interface Project {
+  id: string;
+  url: string;
+  status: string;
+  error?: string | null;
+  brand: BrandResult["brand"] | null;
+  screenshots: { path: string; url: string }[];
 }
 
 function authHeaders(): Record<string, string> {
@@ -136,8 +171,32 @@ export async function extractBrand(url: string, onStatus?: (s: string) => void):
   }
 }
 
-export const chatTurn = (body: { message: string; project?: string | null; draft?: Draft | null; history?: { role: string; content: string }[] }) =>
-  post<Draft & { reply: string; fixes?: string[] }>("/chat", body);
+/** With draft_id the server uses (and saves into) the stored draft + thread; draft/history are then ignored. */
+export const chatTurn = (body: {
+  message: string;
+  draft_id?: string | null;
+  project?: string | null;
+  draft?: Draft | null;
+  history?: { role: string; content: string }[];
+}) => post<Draft & { reply: string; fixes?: string[]; draft_id: string | null }>("/chat", body);
+
+export const getProject = (id: string) => call<Project>(`/projects/${encodeURIComponent(id)}`);
+
+// ---- drafts (saved server-side, versioned)
+export const listDrafts = (limit = 20) =>
+  call<{ drafts: Omit<SavedDraft, "values" | "controls" | "messages">[] }>(`/drafts?limit=${limit}`);
+export const createDraft = (body: { project?: string | null; title?: string } = {}) => post<SavedDraft>("/drafts", body);
+export const getDraft = (id: string) => call<SavedDraft>(`/drafts/${encodeURIComponent(id)}`);
+export const saveDraft = (id: string, body: Partial<Draft> & { title?: string; project?: string | null; messages?: SavedDraft["messages"] }) =>
+  call<SavedDraft>(`/drafts/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+// ---- video library (kept for good)
+export const listVideos = (limit = 50) => call<{ videos: Video[] }>(`/videos?limit=${limit}`);
+export const hideVideo = (id: string) => call<{ ok: boolean }>(`/videos/${encodeURIComponent(id)}`, { method: "DELETE" });
 
 export const previewStills = (project: string, draft: Draft) =>
   post<{ storyboard: string; stills: { type: string; url: string }[] }>("/preview", { project, ...draft });
@@ -163,8 +222,13 @@ export async function getJob(id: string): Promise<MotionJob> {
   };
 }
 
-export async function startRender(project: string, draft: Draft, formats?: string[]): Promise<MotionJob> {
-  const r = await post<{ job: string }>("/render", { project, ...draft, ...(formats?.length ? { formats } : {}) });
+export async function startRender(project: string, draft: Draft, opts: { formats?: string[]; draftId?: string | null } = {}): Promise<MotionJob> {
+  const r = await post<{ job: string }>("/render", {
+    project,
+    ...draft,
+    ...(opts.formats?.length ? { formats: opts.formats } : {}),
+    ...(opts.draftId ? { draft_id: opts.draftId } : {}),
+  });
   return { id: r.job, status: "queued", progress: 0 };
 }
 

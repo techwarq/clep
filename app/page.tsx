@@ -579,7 +579,7 @@ export default function Page() {
             </nav>
           </div>
           <div className="lp-foot-mark" aria-hidden>
-            <ClepLogo height={260} color="#efefed" />
+            <ClepLogo height={260} color="#efefed" mark={false} />
           </div>
           <div className="lp-foot-bar">
             <span>© 2026 Clep</span>

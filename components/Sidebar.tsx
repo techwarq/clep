@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { ClepUser } from "../lib/api";
 import ClepLogo from "./Logo";
 
-export type DashView = "create" | "capture" | "keys" | "billing" | "usage";
+export type DashView = "create" | "videos" | "capture" | "keys" | "billing" | "usage";
 
 function Icon({ d, extra }: { d: string; extra?: string }) {
   return (
@@ -15,7 +15,7 @@ function Icon({ d, extra }: { d: string; extra?: string }) {
   );
 }
 
-const NAV: { key: DashView | "videos"; label: string; icon: React.ReactNode; badge?: string; disabled?: boolean }[] = [
+const NAV: { key: DashView; label: string; icon: React.ReactNode; badge?: string; disabled?: boolean }[] = [
   {
     key: "create",
     label: "Create",
@@ -24,8 +24,6 @@ const NAV: { key: DashView | "videos"; label: string; icon: React.ReactNode; bad
   {
     key: "videos",
     label: "Videos",
-    badge: "Soon",
-    disabled: true,
     icon: <Icon d="M4 6.5A1.5 1.5 0 0 1 5.5 5h13A1.5 1.5 0 0 1 20 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11z" extra="M4 9h16M8 5v4M12 5v4M16 5v4" />,
   },
   {
@@ -91,7 +89,7 @@ export default function Sidebar({
               className={`sb-nav-item ${view === n.key ? "active" : ""} ${n.disabled ? "disabled" : ""}`}
               disabled={n.disabled}
               title={n.disabled ? "Coming soon" : undefined}
-              onClick={() => !n.disabled && onNavigate(n.key as DashView)}
+              onClick={() => !n.disabled && onNavigate(n.key)}
             >
               <span className="sb-nav-icon">{n.icon}</span>
               {n.label}

@@ -44,17 +44,22 @@ export default function ClepLogo({
   fontSize = 25,
   height,
   color = "#0a0a0a",
+  mark = true,
+  markSize,
+  gap,
 }: {
   markSize?: number;
   fontSize?: number;
   height?: number;
   color?: string;
   gap?: number;
+  /** Show the square C icon before the wordmark. */
+  mark?: boolean;
 }) {
   const h = height ?? Math.round(fontSize * 1.05);
-  return (
+  const word = (
     <span
-      className="clep-logo"
+      className="clep-wordmark"
       role="img"
       aria-label="clep"
       style={{
@@ -72,5 +77,12 @@ export default function ClepLogo({
         maskPosition: "left center",
       }}
     />
+  );
+  if (!mark) return <span className="clep-logo">{word}</span>;
+  return (
+    <span className="clep-logo" style={{ display: "inline-flex", alignItems: "center", gap: gap ?? Math.round(h * 0.38) }}>
+      <ClepMark size={markSize ?? Math.round(h * 1.2)} />
+      {word}
+    </span>
   );
 }
