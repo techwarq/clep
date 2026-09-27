@@ -21,7 +21,7 @@ const TEMPLATES = [
 const ARC: [string, string][] = [
   ["editorial", "a-l2"],
   ["agent-run", "a-l1"],
-  ["feature-film", "a-c"],
+  ["hero-story", "a-c"],
   ["phone-chat", "a-r1"],
   ["teaser", "a-r2"],
 ];
@@ -37,72 +37,38 @@ const CONTROLS = [
   ["Format", "16:9 · 9:16 · 1:1 · 4:5"],
 ];
 
-function useTyped(text: string, run: boolean, speed = 38) {
-  const [n, setN] = useState(0);
-  useEffect(() => {
-    setN(0);
-    if (!run) return;
-    const t = window.setInterval(() => setN((k) => (k >= text.length ? k : k + 1)), speed);
-    return () => window.clearInterval(t);
-  }, [text, run, speed]);
-  return text.slice(0, n);
-}
-
-function HeroStage() {
-  const [idx, setIdx] = useState(0);
-  const [reduced, setReduced] = useState(false);
-  const vids = useRef<(HTMLVideoElement | null)[]>([]);
-  const t = TEMPLATES[idx];
-  const typed = useTyped(t.prompt, !reduced);
-
-  useEffect(() => {
-    setReduced(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
-  }, []);
-
-  useEffect(() => {
-    vids.current.forEach((v, i) => {
-      if (!v) return;
-      if (i === idx) {
-        v.currentTime = 0;
-        v.play().catch(() => {});
-      } else v.pause();
-    });
-  }, [idx]);
-
+function DemoPlayer() {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const start = () => {
+    const v = ref.current;
+    if (!v) return;
+    v.muted = false;
+    v.play().catch(() => {});
+  };
   return (
-    <div className="lx-stage-wrap">
-      <div className="lx-stage">
-        {TEMPLATES.map((tp, i) => (
-          <video
-            key={tp.id}
-            ref={(el) => {
-              vids.current[i] = el;
-            }}
-            className={i === idx ? "on" : ""}
-            src={`/templates/${tp.id}.mp4`}
-            poster={`/templates/${tp.id}.jpg`}
-            muted
-            playsInline
-            preload={i === 0 ? "auto" : "metadata"}
-            autoPlay={i === 0}
-            onEnded={() => setIdx((k) => (k + 1) % TEMPLATES.length)}
-          />
-        ))}
-        <div className="lx-prompt" aria-hidden>
-          <span className="lx-prompt-ava">✦</span>
-          <span className="lx-prompt-text">
-            {reduced ? t.prompt : typed}
-            <i className="lx-caret" />
-          </span>
-          <span className="lx-prompt-go">→</span>
-        </div>
-      </div>
-      <div className="lx-stage-tabs" role="tablist" aria-label="Templates">
-        {TEMPLATES.map((tp, i) => (
-          <button key={tp.id} role="tab" aria-selected={i === idx} className={i === idx ? "on" : ""} onClick={() => setIdx(i)}>
-            {tp.name}
+    <div className="demo-wrap">
+      <div className={`demo-player ${playing ? "playing" : ""}`}>
+        <video
+          ref={ref}
+          src="/product-demo.mp4"
+          poster="/product-demo.jpg"
+          playsInline
+          preload="metadata"
+          controls={playing}
+          onPlay={() => setPlaying(true)}
+        />
+        {!playing && (
+          <button className="demo-play" onClick={start} aria-label="Play the Clep demo with sound">
+            <span className="demo-play-btn" aria-hidden>
+              ▶
+            </span>
+            <span className="demo-play-text">
+              <b>Watch the demo</b>
+              <span>48 seconds · sound on</span>
+            </span>
           </button>
-        ))}
+        )}
       </div>
     </div>
   );
@@ -215,7 +181,7 @@ export default function Page() {
 
         <div className="arc hero-anim d4" aria-hidden>
           {ARC.map(([id, pos]) => {
-            const tp = TEMPLATES.find((x) => x.id === id)!;
+            const tp = TEMPLATES.find((x) => x.id === id);
             return (
               <div key={id} className={`arc-card ${pos}`}>
                 <video src={`/templates/${id}.mp4`} poster={`/templates/${id}.jpg`} muted loop autoPlay playsInline preload="metadata" />
@@ -224,7 +190,7 @@ export default function Page() {
                     <i>+</i> Make a video
                   </span>
                 ) : (
-                  <span className="arc-tag">{tp.name}</span>
+                  <span className="arc-tag">{tp?.name}</span>
                 )}
               </div>
             );
@@ -311,7 +277,7 @@ export default function Page() {
               </i>
             </a>
           </div>
-          <HeroStage />
+          <DemoPlayer />
           <div className="tray">
             {TEMPLATES.map((t, i) => (
               <Reveal key={t.id} delay={i * 70} className="tc">

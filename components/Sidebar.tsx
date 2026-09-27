@@ -41,12 +41,6 @@ const I = {
       <path d="M3 10h18M7 14.5h3" />
     </Icon>
   ),
-  docs: (
-    <Icon>
-      <path d="M6 3.5h8.5L19 8v11.5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1z" />
-      <path d="M14 3.5V8h5M8.5 12.5h7M8.5 16h5" />
-    </Icon>
-  ),
   support: (
     <Icon>
       <path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.1A8 8 0 1 1 20 12z" />
@@ -154,11 +148,6 @@ export default function Sidebar({
           <span className="sb2-ico">{I.billing}</span>
           <span className="sb2-label">Billing</span>
         </button>
-        <a className="sb2-item" href="https://github.com/techwarq/clep_plugin_be" target="_blank" rel="noreferrer" data-tip={collapsed ? "Documentation" : undefined} aria-label="Documentation">
-          <span className="sb2-ico">{I.docs}</span>
-          <span className="sb2-label">Documentation</span>
-          <span className="sb2-ext">↗</span>
-        </a>
         <a className="sb2-item" href="mailto:support@clep.dev" data-tip={collapsed ? "Support" : undefined} aria-label="Support">
           <span className="sb2-ico">{I.support}</span>
           <span className="sb2-label">Support</span>
