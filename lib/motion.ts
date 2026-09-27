@@ -70,7 +70,22 @@ export interface BrandResult {
   screenshots: string[]; // absolute URLs, same order as brand.screenshots
 }
 
-export type JobStatus = "queued" | "dispatched" | "running" | "preparing" | "rendering" | "uploading" | "done" | "error";
+// Films add voicing → scoring before rendering.
+export type JobStatus =
+  | "queued" | "dispatched" | "running" | "preparing" | "voicing" | "scoring" | "rendering" | "uploading" | "done" | "error";
+
+/** A narrator voice. `preview` is an API-host path (no auth) — pass through motionFile(). */
+export interface Voice {
+  id: string;
+  label: string;
+  gender?: string;
+  accent?: string;
+  age?: string;
+  description?: string;
+  tags?: string[];
+  preview?: string;
+  selected?: boolean;
+}
 
 export interface MotionJob {
   id: string;
@@ -178,7 +193,29 @@ export const chatTurn = (body: {
   project?: string | null;
   draft?: Draft | null;
   history?: { role: string; content: string }[];
-}) => post<Draft & { reply: string; fixes?: string[]; draft_id: string | null }>("/chat", body);
+}) =>
+  post<
+    Draft & {
+      reply: string;
+      fixes?: string[];
+      /** Assets the brand is missing (fonts, logo…) — prompt an upload. */
+      needs?: unknown[];
+      draft_id: string | null;
+      /** Films only: the narrator, and the current voice first + a few that fit. */
+      voice?: string;
+      voices?: Voice[];
+    }
+  >("/chat", body);
+
+let voicesCache: Promise<{ voices: Voice[]; default: string }> | null = null;
+/** Full voice catalogue — fetched once per page load. */
+export const getVoices = () => {
+  voicesCache ??= call<{ voices: Voice[]; default: string }>("/voices").catch((e) => {
+    voicesCache = null;
+    throw e;
+  });
+  return voicesCache;
+};
 
 export const getProject = (id: string) => call<Project>(`/projects/${encodeURIComponent(id)}`);
 

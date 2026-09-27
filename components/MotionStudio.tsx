@@ -26,10 +26,19 @@ import {
   type Slot,
   type Usage,
   type Video,
+  type Voice,
 } from "../lib/motion";
 import { ClepMark } from "./Logo";
+import { FilmScript, VoiceBrowser, VoiceCard, VoiceChip, useVoicePlayer } from "./FilmParts";
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Msg = {
+  role: "user" | "assistant";
+  content: string;
+  // Film replies (this session only — the saved thread keeps just the text).
+  voices?: Voice[];
+  fixes?: string[];
+  needs?: unknown[];
+};
 type Brand = { project: string; name: string; url: string; screenshots: string[]; shotPaths: string[] };
 
 // Only which draft is open + the URL box live in the browser; the draft itself is saved server-side.
@@ -55,9 +64,13 @@ const BEAT_LABEL: Record<string, string> = {
 };
 
 const JOB_LABEL: Record<string, string> = {
-  queued: "Queued…", dispatched: "Starting render…", running: "Starting render…", preparing: "Preparing your assets…",
-  rendering: "Rendering your video…", uploading: "Finishing up…",
+  queued: "Getting ready…", dispatched: "Getting ready…", running: "Getting ready…", preparing: "Getting ready…",
+  voicing: "Recording the voiceover…", scoring: "Scoring music…", rendering: "Rendering 1080p60…", uploading: "Almost done…",
 };
+
+/** `needs` entries come as strings or small objects — show whatever label they carry. */
+const needLabel = (n: unknown) =>
+  typeof n === "string" ? n : n && typeof n === "object" ? String((n as Record<string, unknown>).label ?? (n as Record<string, unknown>).message ?? (n as Record<string, unknown>).kind ?? "an asset") : "an asset";
 
 const humanize = (k: string) => k.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
 
@@ -344,6 +357,9 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
   const [usage, setUsage] = useState<Usage | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [browseVoices, setBrowseVoices] = useState(false);
+  const [openCards, setOpenCards] = useState<Set<number>>(new Set()); // collapsed voice chips the user re-opened
+  const player = useVoicePlayer();
   const threadRef = useRef<HTMLDivElement>(null);
   const hydrated = useRef(false);
   const dirty = useRef(false); // set by manual edits only — chat turns are saved by the server
@@ -483,13 +499,13 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
       // The server applies the turn to the saved draft and stores the thread.
       const r = await chatTurn({ message, draft_id: id, project: b?.project ?? null });
       // A ratio picked before the first draft rides along into it.
-      const controlsOut = pendingFormat && !draft ? { ...r.controls, format: pendingFormat } : r.controls;
+      const controlsOut = pendingFormat && !draft && r.template !== "film" ? { ...r.controls, format: pendingFormat } : r.controls;
       if (controlsOut !== r.controls) {
         dirty.current = true;
         setPendingFormat(null);
       }
       setDraft({ template: r.template, values: r.values, controls: controlsOut });
-      setMsgs([...next, { role: "assistant", content: r.reply }]);
+      setMsgs([...next, { role: "assistant", content: r.reply, voices: r.voices, fixes: r.fixes, needs: r.needs }]);
       setStills(null);
       if (b) void refreshPreview(b, { template: r.template, values: r.values, controls: controlsOut });
     } catch (e) {
@@ -519,6 +535,10 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
     setDraft({ ...draft, controls: { ...draft.controls, [k]: v } });
   };
   const ctl = (k: string) => (draft?.controls[k] as string | undefined) ?? tpl?.defaults[k] ?? "";
+  const isFilm = draft?.template === "film";
+  const voice = draft?.controls.voice as string | undefined;
+  // Picking a voice changes no script — set it locally; the autosave PUTs the draft.
+  const pickVoice = (id: string) => setControl("voice", id);
 
   const refreshPreview = async (b = brand, d = draft) => {
     if (!b || !d) return onToast("Add your site URL first");
@@ -628,11 +648,13 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
       {new Date(usage.period_end * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
     </span>
   );
+  const lastAssistant = msgs.map((m) => m.role).lastIndexOf("assistant");
   const started = msgs.length > 0 || !!draft;
   const jobBusy = !!job && job.status !== "done" && job.status !== "error";
 
   const formatOptions = controls ? Object.keys(controls.formats) : ["16:9", "9:16", "1:1", "4:5"];
-  const currentFormat = (draft ? ctl("format") : pendingFormat) || "16:9";
+  const currentFormat = isFilm ? "16:9" : (draft ? ctl("format") : pendingFormat) || "16:9";
+  const formatLocked = (f: string) => isFilm && f !== "16:9";
 
   const composer = (big: boolean) => (
     <div className={`cx-composer ${big ? "big" : ""}`}>
@@ -687,12 +709,13 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
           </svg>
           <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="yoursite.com" aria-label="Your site URL" />
         </label>
-        <label className="cx-ratio" title="Aspect ratio">
+        <label className="cx-ratio" title={isFilm ? "Films are 16:9 only for now" : "Aspect ratio"}>
           <span className={`cx-ratio-ico r-${currentFormat.replace(":", "x")}`} aria-hidden />
           <select value={currentFormat} onChange={(e) => (draft ? setControl("format", e.target.value) : setPendingFormat(e.target.value))} aria-label="Aspect ratio">
             {formatOptions.map((f) => (
-              <option key={f} value={f}>
+              <option key={f} value={f} disabled={formatLocked(f)}>
                 {f}
+                {formatLocked(f) ? " — 16:9 only for now" : ""}
               </option>
             ))}
           </select>
@@ -787,7 +810,42 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
           {msgs.map((m, i) => (
             <div key={i} className={`cx-msg ${m.role}`}>
               {m.role === "assistant" && <span className="cx-ava"><ClepMark size={28} /></span>}
-              <p>{m.content}</p>
+              <div className="cx-msg-body">
+                <p>{m.content}</p>
+                {m.fixes && m.fixes.length > 0 && <span className="cx-fixes">Adjusted: {m.fixes.join(" · ")}</span>}
+                {m.needs && m.needs.length > 0 && (
+                  <div className="cx-needs">
+                    <span>Your film needs {m.needs.map(needLabel).join(", ")}.</span>
+                    <label className="mk-btn-light">
+                      Upload
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*,.svg,.ttf,.otf,.woff,.woff2"
+                        onChange={async (e) => {
+                          const f = e.target.files?.[0];
+                          e.target.value = "";
+                          if (!f) return;
+                          const path = await upload(f);
+                          if (path) setAttachments((xs) => [...xs, { name: f.name, path, kind: "image" }]);
+                        }}
+                      />
+                    </label>
+                  </div>
+                )}
+                {m.voices && m.voices.length > 0 &&
+                  (i === lastAssistant || openCards.has(i) ? (
+                    <VoiceCard
+                      voices={m.voices}
+                      selected={voice ?? m.voices.find((v) => v.selected)?.id}
+                      onPick={pickVoice}
+                      onBrowse={() => setBrowseVoices(true)}
+                      player={player}
+                    />
+                  ) : (
+                    <VoiceChip voice={voice} onChange={() => setOpenCards((s) => new Set(s).add(i))} />
+                  ))}
+              </div>
             </div>
           ))}
           {busy && (
@@ -810,7 +868,7 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
                 key={t}
                 className={tab === t ? "active" : ""}
                 onClick={() => setTab(t)}
-                disabled={(t === "content" || t === "style") && !(draft && tpl && controls)}
+                disabled={(t === "content" && !(draft && (tpl || isFilm))) || (t === "style" && !(draft && tpl && controls))}
               >
                 {t[0].toUpperCase() + t.slice(1)}
               </button>
@@ -828,6 +886,7 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
             >
               {!draft && <option value="">Pick a template</option>}
               {draft?.template === "custom" && <option value="custom">Custom</option>}
+              {isFilm && <option value="film">Film</option>}
               {templates.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
@@ -885,7 +944,7 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
                   <div className="ms-progress">
                     <i className="mk-spin" />{" "}
                     {job.status === "queued" && job.queuePosition ? `Queued — ${job.queuePosition} ahead of you` : JOB_LABEL[job.status] ?? "Working…"}
-                    <span className={`ms-bar ${job.status === "rendering" ? "ms-bar-live" : ""}`}>
+                    <span className={`ms-bar ${["voicing", "scoring", "rendering"].includes(job.status) ? "ms-bar-live" : ""}`}>
                       <span style={{ width: `${Math.round(job.progress * 100)}%` }} />
                     </span>
                   </div>
@@ -896,8 +955,12 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
                   ? "Your video is ready."
                   : job?.status === "error"
                     ? `Render failed: ${job.error}`
-                    : stills
-                      ? "Storyboard — one frame per scene. Edit in Content or Style, or just ask in the chat."
+                    : jobBusy && isFilm
+                      ? "Films take a few minutes — voiceover, music, then 1080p60. You can keep editing meanwhile."
+                      : stills
+                      ? isFilm
+                        ? "Storyboard — one still per beat, lined up with the script in Content."
+                        : "Storyboard — one frame per scene. Edit in Content or Style, or just ask in the chat."
                       : tpl?.example
                         ? `Example: ${tpl.example.brand}. Your version uses your brand.`
                         : !brand
@@ -926,7 +989,19 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
             </div>
           )}
 
-          {tab === "content" && draft && tpl && (
+          {tab === "content" && draft && isFilm && (
+            <div className="cx-panel">
+              <FilmScript
+                values={draft.values}
+                voice={voice}
+                stills={stills}
+                onChangeBeats={(b) => setValue("beats", b)}
+                onVoice={() => setBrowseVoices(true)}
+              />
+            </div>
+          )}
+
+          {tab === "content" && draft && tpl && !isFilm && (
             <div className="cx-panel">
               {tpl.id === "custom" ? (
                 <BeatsEditor beats={(draft.values.beats as Beat[] | undefined) ?? []} onChange={(b) => setValue("beats", b)} brand={brand} onUpload={upload} />
@@ -955,7 +1030,10 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
                   <label className="mk-flabel" htmlFor="c-format">Format</label>
                   <select id="c-format" className="mk-input" value={ctl("format")} onChange={(e) => setControl("format", e.target.value)}>
                     {Object.keys(controls.formats).map((k) => (
-                      <option key={k} value={k}>{k}</option>
+                      <option key={k} value={k} disabled={formatLocked(k)}>
+                        {k}
+                        {formatLocked(k) ? " — 16:9 only for now" : ""}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -1028,6 +1106,17 @@ export default function MotionStudio({ onToast }: { onToast: (m: string) => void
           )}
         </div>
       </section>
+      {browseVoices && (
+        <VoiceBrowser
+          selected={voice}
+          onPick={(id) => {
+            pickVoice(id);
+            setBrowseVoices(false);
+          }}
+          onClose={() => setBrowseVoices(false)}
+          player={player}
+        />
+      )}
     </div>
   );
 }
