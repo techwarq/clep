@@ -5,8 +5,9 @@ import ClepLogo from "../components/Logo";
 import Reveal from "../components/Reveal";
 
 const BETA = process.env.NEXT_PUBLIC_IN_BETA === "true";
-const SIGNUP_HREF = BETA ? "/invite" : "/signup";
-const SIGNUP_LABEL = BETA ? "Ask for invite" : "Start free";
+// No accounts: people request a key (/invite), then enter it (/login).
+const SIGNUP_HREF = "/invite";
+const SIGNUP_LABEL = BETA ? "Ask for invite" : "Get access";
 
 const ROTATE = ["every single day.", "in minutes, not weeks.", "without an agency."];
 
@@ -106,7 +107,7 @@ export default function Page() {
           <div className="sky-actions">
             {!BETA && (
               <a href="/login" className="sky-login">
-                Log in
+                Enter key
               </a>
             )}
             <a href={SIGNUP_HREF} className="pill-btn pill-lime pill-sm">
@@ -128,7 +129,7 @@ export default function Page() {
               <a onClick={() => navGo("capture")}>Capture</a>
               <a onClick={() => navGo("pricing")}>Pricing</a>
               <a href="/dashboard">Dashboard</a>
-              {!BETA && <a href="/login">Log in</a>}
+              {!BETA && <a href="/login">Enter key</a>}
             </div>
           )}
         </div>
@@ -420,7 +421,7 @@ export default function Page() {
                 <li>All templates</li>
               </ul>
               <a className="pill-btn pill-dark" href={SIGNUP_HREF}>
-                {BETA ? "Ask for invite" : "Start free"}
+                {SIGNUP_LABEL}
               </a>
             </div>
             <div className="pc dark">
@@ -435,7 +436,7 @@ export default function Page() {
                 <li>1080p60 exports</li>
                 <li>Priority rendering</li>
               </ul>
-              <a className="pill-btn pill-lime" href={BETA ? SIGNUP_HREF : "/dashboard?view=billing"}>
+              <a className="pill-btn pill-lime" href={SIGNUP_HREF}>
                 {BETA ? "Ask for invite" : "Get Pro"}
               </a>
             </div>
@@ -449,7 +450,7 @@ export default function Page() {
                 <li>Everything in Pro</li>
                 <li>Team workspace</li>
               </ul>
-              <a className="pill-btn pill-dark" href={BETA ? SIGNUP_HREF : "/dashboard?view=billing"}>
+              <a className="pill-btn pill-dark" href={SIGNUP_HREF}>
                 {BETA ? "Ask for invite" : "Get Studio"}
               </a>
             </div>
@@ -494,8 +495,8 @@ export default function Page() {
                 <a href="/invite">Ask for invite</a>
               ) : (
                 <>
-                  <a href="/login">Log in</a>
-                  <a href="/signup">Sign up</a>
+                  <a href="/login">Enter key</a>
+                  <a href="/invite">Get access</a>
                 </>
               )}
             </nav>
