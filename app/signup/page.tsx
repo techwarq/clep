@@ -1,13 +1,6 @@
-import type { Metadata } from "next";
-import { Suspense } from "react";
-import AuthCard from "../../components/AuthCard";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Sign up free — clep" };
-
+// No accounts — access is by key.
 export default function Signup() {
-  return (
-    <Suspense fallback={null}>
-      <AuthCard mode="signup" />
-    </Suspense>
-  );
+  redirect("/login");
 }

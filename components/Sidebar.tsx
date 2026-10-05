@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ClepUser } from "../lib/api";
 import ClepLogo, { ClepMark } from "./Logo";
 
-export type DashView = "create" | "videos" | "capture" | "keys" | "billing" | "usage";
+export type DashView = "create" | "videos";
 
 const COLLAPSE_KEY = "clep_sidebar_collapsed";
 
@@ -27,18 +26,6 @@ const I = {
     <Icon>
       <rect x="3.5" y="5" width="17" height="14" rx="3" />
       <path d="M10.5 9.5v5l4.2-2.5-4.2-2.5z" />
-    </Icon>
-  ),
-  capture: (
-    <Icon>
-      <rect x="3" y="6.5" width="13" height="11" rx="2.5" />
-      <path d="M16 10.5l4.5-2.5v8l-4.5-2.5" />
-    </Icon>
-  ),
-  billing: (
-    <Icon>
-      <rect x="3" y="5.5" width="18" height="13" rx="2.5" />
-      <path d="M3 10h18M7 14.5h3" />
     </Icon>
   ),
   support: (
@@ -74,20 +61,18 @@ const I = {
 const MAIN: { key: DashView; label: string; icon: React.ReactNode; soon?: boolean }[] = [
   { key: "create", label: "Create", icon: I.create },
   { key: "videos", label: "Videos", icon: I.videos },
-  { key: "capture", label: "Capture", icon: I.capture, soon: true },
 ];
 
 export default function Sidebar({
   view,
   onNavigate,
-  user,
-  planName,
+  keyHint,
   onLogout,
 }: {
   view: DashView;
   onNavigate: (v: DashView) => void;
-  user: ClepUser | null;
-  planName: string | null;
+  /** The access key in use, masked (va_…abcd). */
+  keyHint: string;
   onLogout: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -109,9 +94,6 @@ export default function Sidebar({
     setMenuOpen(false);
   };
 
-  const initial = user?.name?.[0]?.toUpperCase() ?? user?.email?.[0]?.toUpperCase() ?? "?";
-  const plan = planName ? planName[0].toUpperCase() + planName.slice(1).toLowerCase() : "Free";
-  const isFree = !planName || planName.toLowerCase() === "free";
 
   return (
     <aside className={`sb sb2 ${collapsed ? "collapsed" : ""}`}>
@@ -144,10 +126,6 @@ export default function Sidebar({
       <div className="sb2-sep" />
       <span className="sb2-section">Other</span>
       <nav className="sb2-nav">
-        <button className={`sb2-item ${view === "billing" ? "active" : ""}`} onClick={() => onNavigate("billing")} data-tip={collapsed ? "Billing" : undefined} aria-label="Billing">
-          <span className="sb2-ico">{I.billing}</span>
-          <span className="sb2-label">Billing</span>
-        </button>
         <a className="sb2-item" href="mailto:support@clep.dev" data-tip={collapsed ? "Support" : undefined} aria-label="Support">
           <span className="sb2-ico">{I.support}</span>
           <span className="sb2-label">Support</span>
@@ -155,31 +133,12 @@ export default function Sidebar({
       </nav>
 
       <div className="sb2-bottom">
-        {collapsed ? (
-          <button className="sb2-item sb2-plan-mini" onClick={() => onNavigate("billing")} data-tip={`${plan} plan`} aria-label={`${plan} plan`}>
-            <span className="sb2-ico">{I.spark}</span>
-          </button>
-        ) : (
-          <div className="sb2-plan">
-            <div className="sb2-plan-head">
-              <span className="sb2-plan-ico">{I.spark}</span>
-              <b>
-                {plan} <span>plan</span>
-              </b>
-            </div>
-            <p>{isFree ? "More videos, 1080p60 exports and priority rendering." : "Thanks for backing Clep. Manage seats and invoices anytime."}</p>
-            <button className="sb2-plan-btn" onClick={() => onNavigate("billing")}>
-              {isFree ? "Upgrade to Pro" : "Manage plan"}
-            </button>
-          </div>
-        )}
-
         <div className="sb2-user-wrap">
-          <button className="sb2-user" onClick={() => setMenuOpen((m) => !m)} data-tip={collapsed ? user?.name || "Account" : undefined} aria-label="Account menu">
-            <span className="sb2-avatar">{initial}</span>
+          <button className="sb2-user" onClick={() => setMenuOpen((m) => !m)} data-tip={collapsed ? "Access key" : undefined} aria-label="Access key menu">
+            <span className="sb2-avatar">⚿</span>
             <span className="sb2-user-text">
-              <b>{user?.name || "Account"}</b>
-              <span>{user?.email || ""}</span>
+              <b>Access key</b>
+              <span>{keyHint}</span>
             </span>
             <span className="sb2-updown">{I.updown}</span>
           </button>
@@ -188,32 +147,16 @@ export default function Sidebar({
               <div className="menu-scrim" onClick={() => setMenuOpen(false)} />
               <div className="avatar-menu sb2-menu">
                 <div className="avatar-head">
-                  <strong>{user?.name || "Account"}</strong>
-                  <span>{user?.email || ""}</span>
+                  <strong>Access key</strong>
+                  <span>{keyHint}</span>
                 </div>
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onNavigate("keys");
-                  }}
-                >
-                  API keys
-                </button>
-                <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onNavigate("usage");
-                  }}
-                >
-                  Usage
-                </button>
                 <button
                   onClick={() => {
                     setMenuOpen(false);
                     onLogout();
                   }}
                 >
-                  Log out
+                  Remove access key
                 </button>
               </div>
             </>
