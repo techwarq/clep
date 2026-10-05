@@ -1,6 +1,6 @@
 // Clep platform API (video-automation) — called straight from the browser with the user's access key.
 //   POST /v1/reels {prompt}  ·  POST /v1/motion {url, request, seconds?}
-//   GET /v1/jobs[/:id]  ·  POST /v1/jobs/:id/retry  ·  GET /v1/videos/:id (mp4)
+//   GET /v1/me  ·  GET /v1/jobs[/:id]  ·  POST /v1/jobs/:id/retry  ·  GET /v1/videos/:id (mp4)
 
 const BASE = (process.env.NEXT_PUBLIC_CLEP_API_URL ?? "https://api.clep.abstraklabs.com").replace(/\/v1\/?$/, "").replace(/\/$/, "");
 const KEY = "clep_access_key";
@@ -62,9 +62,9 @@ const json = async <T,>(path: string, init: RequestInit = {}) => (await (await r
 const post = <T,>(path: string, body?: unknown) =>
   json<T>(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
 
-/** Checks a key against the API without storing it. */
-export async function verifyKey(key: string): Promise<void> {
-  await request("/v1/jobs", {}, key);
+/** The API hashes the key and matches it against the stored keys: 200 → in, 401 → "isn't valid". Not stored here. */
+export async function verifyKey(key: string): Promise<{ user_id: string; engines: Engine[] }> {
+  return (await request("/v1/me", {}, key)).json();
 }
 
 export const createReel = (prompt: string) => post<{ id: string; status: JobStatus }>("/v1/reels", { prompt });
