@@ -38,6 +38,12 @@ const PLANS = [
   { name: "Studio", price: "$29", note: "For teams shipping every day." },
 ];
 
+const FOOTER_LINKS = [
+  { title: "Product", links: [["Work", "#work"], ["How It Works", "#how"], ["Pricing", "#pricing"]] },
+  { title: "Resources", links: [["Docs", SKILL_URL], ["Common Questions", "#faq"]] },
+  { title: "Account", links: [["Join Waitlist", "#waitlist"], ["Login", "/login"]] },
+];
+
 const FAQ = [
   {
     q: "Can it record my localhost?",
@@ -214,7 +220,7 @@ export default function Page() {
         </div>
       </section>
 
-      <section className="block questions">
+      <section id="faq" className="block questions">
         <h2 className="block-title">Common <span className="pink">questions.</span></h2>
         {FAQ.map((item) => (
           <details key={item.q}>
@@ -224,19 +230,36 @@ export default function Page() {
         ))}
       </section>
 
-      <section className="closer">
-        <img src="/brand/clep-mark-cream.png" alt="" width={64} height={76} className="closer-mark" />
-        <h2 className="display small">Ship it. We&apos;ll film it.</h2>
-        <Waitlist cta="Join Waitlist" />
-      </section>
-
       <footer className="home-foot">
-        <img src="/brand/clep-logo-cream.png" alt="Clep" width={82} height={32} />
-        <span>© 2026 Clep</span>
-        <nav>
-          <a href={SKILL_URL}>Docs</a>
-          <a href="/login">Login</a>
-        </nav>
+        <div className="foot-cta">
+          <img src="/brand/clep-mark-cream.png" alt="" width={56} height={67} className="foot-cta-mark" />
+          <h2 className="display small">
+            Ship it. <span className="pink">We&apos;ll film it.</span>
+          </h2>
+          <Waitlist cta="Join Waitlist" />
+        </div>
+        <div className="foot-art">
+        <div className="foot-top">
+          <div className="foot-brand">
+            <img src="/brand/clep-logo-ink.png" alt="Clep" width={110} height={43} />
+            <p>Your agent records it, Clep cuts it. Product videos for every launch, every day.</p>
+          </div>
+          <nav className="foot-cols" aria-label="Footer">
+            {FOOTER_LINKS.map((col) => (
+              <div key={col.title}>
+                <h3>{col.title}</h3>
+                {col.links.map(([label, href]) => (
+                  <a key={label} href={href}>{label}</a>
+                ))}
+              </div>
+            ))}
+          </nav>
+        </div>
+        <div className="foot-bottom">
+          <span>© 2026 Clep. All rights reserved.</span>
+          <span>Made with ♥ by <a href="https://abstraklabs.com">Abstrak Labs</a></span>
+        </div>
+        </div>
       </footer>
     </div>
   );
