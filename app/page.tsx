@@ -1,12 +1,9 @@
 import "./landing.css";
-import CopyCommand from "../components/CopyCommand";
 import HeroFilm from "../components/HeroFilm";
 import InViewVideo from "../components/InViewVideo";
 import ClepLogo from "../components/Logo";
-import { EFFECTS, LAUNCH_VIDEO, PACING, SETUP_COMMAND, SKILL_URL } from "../lib/landing";
-
-const BETA = process.env.NEXT_PUBLIC_IN_BETA === "true";
-const SIGNUP_LABEL = BETA ? "Ask for invite" : "Get API key";
+import Waitlist from "../components/Waitlist";
+import { EFFECTS, LAUNCH_VIDEO, PACING, SKILL_URL } from "../lib/landing";
 
 const STEPS = [
   {
@@ -32,12 +29,6 @@ const RUN = [
   ["→", "recorded 11.0s at 2x · uploading 42 MB"],
   ["→", "editing · camera, cursor, pacing"],
   ["✓", "clip ready: clep/signup.mp4"],
-];
-
-const WAYS = [
-  { name: "Skill", text: "One line in your agent's chat.", code: SETUP_COMMAND },
-  { name: "Local recorder", text: "Record localhost, render on Clep.", code: "record.py --url http://localhost:3000" },
-  { name: "API", text: "Public pages and mockups, no install.", code: "POST /api/clips { prompt }" },
 ];
 
 const FAQ = [
@@ -80,8 +71,7 @@ export default function Page() {
           <a href={SKILL_URL}>Docs</a>
         </nav>
         <div className="home-actions">
-          {!BETA && <a href="/login" className="home-login">Enter key</a>}
-          <a href="/invite" className="get-key">{SIGNUP_LABEL}</a>
+          <a href="#waitlist" className="get-key">Join waitlist</a>
         </div>
       </header>
 
@@ -98,9 +88,9 @@ export default function Page() {
           Walkthroughs, feature demos &amp; mockups.
         </p>
         <div className="give">
-          <p className="give-label">Give this to your agent</p>
-          <CopyCommand command={SETUP_COMMAND} />
-          <p className="give-note">and let it take it from there.</p>
+          <p className="give-label">Clep is in private beta</p>
+          <Waitlist id="waitlist" />
+          <p className="give-note">We&apos;re letting people in every week.</p>
         </div>
       </section>
 
@@ -165,20 +155,6 @@ export default function Page() {
         </div>
       </section>
 
-      <section className="block">
-        <h2 className="block-title">Three ways to connect.</h2>
-        <p className="block-note">Same engine, same key, whichever your agent speaks.</p>
-        <div className="ways">
-          {WAYS.map((way) => (
-            <div key={way.name} className="way">
-              <h3>{way.name}</h3>
-              <p>{way.text}</p>
-              <code>{way.code}</code>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <section className="block questions">
         <h2 className="block-title">Common questions.</h2>
         {FAQ.map((item) => (
@@ -193,8 +169,7 @@ export default function Page() {
         <h2 className="display small">
           Ship it. <span className="accent">We&apos;ll film it.</span>
         </h2>
-        <CopyCommand command={SETUP_COMMAND} />
-        <a href="/invite" className="get-key">{SIGNUP_LABEL}</a>
+        <Waitlist />
       </section>
 
       <footer className="home-foot">
@@ -202,8 +177,6 @@ export default function Page() {
         <span>© 2026 clep</span>
         <nav>
           <a href={SKILL_URL}>Skill</a>
-          <a href="/login">Enter key</a>
-          <a href="/dashboard">Dashboard</a>
         </nav>
       </footer>
     </div>

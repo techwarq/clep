@@ -1,5 +1,4 @@
 export const SKILL_URL = "https://api.clep.abstraklabs.com/skill.md";
-export const SETUP_COMMAND = `set up ${SKILL_URL}`;
 
 export interface LandingVideo {
   slug: string;
