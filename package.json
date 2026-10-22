@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:local": "NEXT_PUBLIC_CLEP_API_URL=http://127.0.0.1:8799/v1 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

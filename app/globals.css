@@ -1934,8 +1934,8 @@ body:has(.lp)::before { display: none; }
 .pill-sm { height: 36px; padding: 0 18px; font-size: 11px; }
 
 /* hero card */
-.sky { position: relative; margin: 12px; border-radius: 22px; overflow: hidden; isolation: isolate; color: #fff; padding: 0 24px 40px; }
-.sky-bg { position: absolute; inset: 0; z-index: -1; background: url("/hero-sky.jpg") center 22% / cover no-repeat; }
+.sky { position: relative; margin: 12px; border-radius: 22px; overflow: hidden; isolation: isolate; color: #fff; padding: 0 24px 64px; min-height: min(880px, 92vh); display: flex; flex-direction: column; }
+.sky-bg { position: absolute; inset: 0; z-index: -1; background: url("/hero-sky.jpg") center 30% / cover no-repeat; }
 .sky-bg::after { content: ""; position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(8,70,190,.35) 0%, rgba(8,70,190,.12) 40%, transparent 70%); }
 .sky-nav { position: relative; z-index: 5; max-width: 1180px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 20px 8px; }
@@ -1950,7 +1950,7 @@ body:has(.lp)::before { display: none; }
 .sky-menu a { padding: 12px 14px; border-radius: 12px; font-weight: 600; cursor: pointer; }
 .sky-menu a:hover { background: #eef1ec; }
 
-.sky-hero { text-align: center; max-width: 900px; margin: 0 auto; padding: 70px 0 0; }
+.sky-hero { text-align: center; max-width: 900px; margin: 0 auto; padding: 110px 0 0; flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .sky-title { font-family: var(--tight); font-weight: 500; font-size: clamp(40px, 6vw, 76px); line-height: 1.02; letter-spacing: -0.045em; margin: 0; color: #fff; text-shadow: 0 2px 40px rgba(8,50,140,.25); }
 .sky-title em { font-style: normal; font-weight: 400; color: rgba(255,255,255,.9); }
 .sky-sub { max-width: 520px; margin: 20px auto 0; font-size: 15.5px; line-height: 1.55; color: rgba(255,255,255,.9); text-shadow: 0 1px 14px rgba(8,50,140,.35); }
@@ -1990,7 +1990,7 @@ body:has(.lp)::before { display: none; }
 .dark-k { font-size: 11px; color: var(--lime); font-family: var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 .arc-card.dark b { font-family: var(--tight); font-weight: 500; font-size: 17px; line-height: 1.25; letter-spacing: -0.02em; }
 .dark-foot { margin-top: auto; font-size: 11px; color: #9aa6a0; }
-.sky-proof { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin: 30px 0 0; font-size: 12.5px; color: rgba(255,255,255,.9); }
+.sky-proof { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin: 36px 0 0; font-size: 12.5px; color: rgba(255,255,255,.9); }
 .sky-proof span::before { content: "✓ "; color: var(--lime); }
 
 /* template strip */
@@ -2056,8 +2056,8 @@ body:has(.lp)::before { display: none; }
   .bn-col { grid-column: 1 / -1; grid-template-rows: none; grid-template-columns: 1.4fr 1fr; }
 }
 @media (max-width: 640px) {
-  .sky { margin: 8px; padding: 0 16px 32px; border-radius: 18px; }
-  .sky-hero { padding-top: 40px; }
+  .sky { margin: 8px; padding: 0 16px 40px; border-radius: 18px; min-height: 92vh; }
+  .sky-hero { padding-top: 60px; }
   .sky-cta .pill-btn { flex: 1 1 100%; justify-content: center; }
   .arc { height: 220px; gap: 10px; margin-top: 40px; }
   .a-c { width: 130px; height: 160px; }

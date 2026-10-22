@@ -1,516 +1,222 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
+import "./landing.css";
+import CopyCommand from "../components/CopyCommand";
+import HeroFilm from "../components/HeroFilm";
+import InViewVideo from "../components/InViewVideo";
 import ClepLogo from "../components/Logo";
-import Reveal from "../components/Reveal";
+import { EFFECTS, LAUNCH_VIDEO, PACING, SETUP_COMMAND, SKILL_URL } from "../lib/landing";
 
 const BETA = process.env.NEXT_PUBLIC_IN_BETA === "true";
-// No accounts: people request a key (/invite), then enter it (/login).
-const SIGNUP_HREF = "/invite";
-const SIGNUP_LABEL = BETA ? "Ask for invite" : "Get access";
+const SIGNUP_LABEL = BETA ? "Ask for invite" : "Get API key";
 
-const ROTATE = ["every single day.", "in minutes, not weeks.", "without an agency."];
-
-const TEMPLATES = [
-  { id: "feature-film", name: "Feature Film", tag: "SaaS launches", prompt: "Launch video for our new export feature", desc: "Your real product floating on a gradient — the camera follows every click." },
-  { id: "agent-run", name: "Agent Run", tag: "AI agents", prompt: "Show our agent researching 50 companies", desc: "A prompt types itself, the agent works the list live, the number lands." },
-  { id: "teaser", name: "Teaser", tag: "Coming soon posts", prompt: "Hype teaser for Tuesday's launch", desc: "Kinetic type on the beat — the announcement before anyone sees the UI." },
-  { id: "editorial", name: "Editorial", tag: "Thoughtful brands", prompt: "Calm, editorial story about why we built it", desc: "Paper, serif headlines, italic accents — the product as proof." },
-  { id: "phone-chat", name: "Phone Chat", tag: "Consumer apps", prompt: "Our assistant fixing a trip over text", desc: "A bright phone, a real conversation — you just approve." },
+const STEPS = [
+  {
+    name: "Record",
+    call: "clep record",
+    text: "Clep's recorder drives your app in a real browser. Localhost, staging, behind a login.",
+  },
+  {
+    name: "Edit",
+    call: "clep edit",
+    text: "Our engine cuts it: a camera that follows every click, cursor, speed ramps, your backdrop.",
+  },
+  {
+    name: "Ship",
+    call: "clip ready",
+    text: "The MP4 lands in your repo. 16:9, 9:16, 1:1 or the exact size of your landing card.",
+  },
 ];
 
-const ARC: [string, string][] = [
-  ["editorial", "a-l2"],
-  ["agent-run", "a-l1"],
-  ["hero-story", "a-c"],
-  ["phone-chat", "a-r1"],
-  ["teaser", "a-r2"],
+const RUN = [
+  ["›", "make a 10s demo of the signup flow"],
+  ["›", "record.py --url localhost:3000 --name signup"],
+  ["→", "recorded 11.0s at 2x · uploading 42 MB"],
+  ["→", "editing · camera, cursor, pacing"],
+  ["✓", "clip ready: clep/signup.mp4"],
 ];
 
-const CONTROLS = [
-  ["Fonts", "8 pairings or your own"],
-  ["Colors", "pulled from your site"],
-  ["Backdrops", "mesh · pastel · paper · grid · spotlight"],
-  ["Pace", "calm · normal · snappy"],
-  ["Text motion", "mask · slam · scramble · blur"],
-  ["Transitions", "cut · blur · whip · zoom · flash"],
-  ["Camera", "still → dynamic push-ins"],
-  ["Format", "16:9 · 9:16 · 1:1 · 4:5"],
+const WAYS = [
+  { name: "Skill", text: "One line in your agent's chat.", code: SETUP_COMMAND },
+  { name: "Local recorder", text: "Record localhost, render on Clep.", code: "record.py --url http://localhost:3000" },
+  { name: "API", text: "Public pages and mockups, no install.", code: "POST /api/clips { prompt }" },
 ];
 
-function DemoPlayer() {
-  const ref = useRef<HTMLVideoElement>(null);
-  const [playing, setPlaying] = useState(false);
-  const start = () => {
-    const v = ref.current;
-    if (!v) return;
-    v.muted = false;
-    v.play().catch(() => {});
-  };
+const FAQ = [
+  {
+    q: "Can it record my localhost?",
+    a: "Yes. The recorder runs on your machine, so it sees whatever your browser sees. Only the capture is uploaded; the edit and render happen on Clep.",
+  },
+  {
+    q: "Will my agent write its own recording code?",
+    a: "No. The skill tells it to run Clep's recorder and engine as shipped. No hand-rolled Playwright, no ffmpeg, no fake mockups of your app.",
+  },
+  {
+    q: "Which agents work?",
+    a: "Any agent that can read a URL and run a shell command: Claude Code, Cursor, Codex, Windsurf, and your own.",
+  },
+  {
+    q: "Do I need to change my app?",
+    a: "Not for walkthroughs. Feature demos read a few data-clep attributes, and your agent adds them for you.",
+  },
+  {
+    q: "Do I pick the zooms and speeds?",
+    a: "No. Clep reads the recording: clicks get a push-in, typing and loading are sped up, dead air is cut. You can still ask for calmer or more dynamic.",
+  },
+  {
+    q: "What does it cost?",
+    a: "Free to start. Pro is $12 a month and Studio $29 a month when you post more.",
+  },
+];
+
+export default function Page() {
   return (
-    <div className="demo-wrap">
-      <div className={`demo-player ${playing ? "playing" : ""}`}>
-        <video
-          ref={ref}
-          src="/product-demo.mp4"
-          poster="/product-demo.jpg"
-          playsInline
-          preload="metadata"
-          controls={playing}
-          onPlay={() => setPlaying(true)}
-        />
-        {!playing && (
-          <button className="demo-play" onClick={start} aria-label="Play the Clep demo with sound">
-            <span className="demo-play-btn" aria-hidden>
-              ▶
-            </span>
-            <span className="demo-play-text">
-              <b>Watch the demo</b>
-              <span>48 seconds · sound on</span>
-            </span>
-          </button>
-        )}
-      </div>
+    <div className="home">
+      <header className="home-nav">
+        <a href="#top" aria-label="clep — home">
+          <ClepLogo height={24} />
+        </a>
+        <nav className="home-links">
+          <a href="#work">Work</a>
+          <a href="#how">How it works</a>
+          <a href={SKILL_URL}>Docs</a>
+        </nav>
+        <div className="home-actions">
+          {!BETA && <a href="/login" className="home-login">Enter key</a>}
+          <a href="/invite" className="get-key">{SIGNUP_LABEL}</a>
+        </div>
+      </header>
+
+      <section id="top" className="intro">
+        <p className="kicker">For Claude Code, Cursor, Codex &amp; every agent</p>
+        <h1 className="display">
+          Show your product
+          <br />
+          <span className="ring">every<RingMark /></span> day.
+        </h1>
+        <p className="intro-sub">
+          Your agent records it, Clep cuts it.
+          <br />
+          Walkthroughs, feature demos &amp; mockups.
+        </p>
+        <div className="give">
+          <p className="give-label">Give this to your agent</p>
+          <CopyCommand command={SETUP_COMMAND} />
+          <p className="give-note">and let it take it from there.</p>
+        </div>
+      </section>
+
+      <section className="stage">
+        <span className="stage-label left">Scroll for the cut</span>
+        <HeroFilm />
+        <span className="stage-label right">Made with Clep</span>
+      </section>
+
+      <section id="how" className="block">
+        <h2 className="block-title">Tell your agent what to film. It runs Clep.</h2>
+        <div className="how">
+          <ol className="how-steps">
+            {STEPS.map((step, i) => (
+              <li key={step.name} className="how-step">
+                <span className="how-num">0{i + 1}</span>
+                <div>
+                  <h3>{step.name} <code>{step.call}</code></h3>
+                  <p>{step.text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <div className="term" aria-label="An agent making a clip">
+            <div className="term-bar"><i /><i /><i /><span>~/acme · agent</span></div>
+            {RUN.map(([mark, line]) => (
+              <p key={line} className={mark === "✓" ? "term-ok" : ""}>
+                <span>{mark}</span> {line}
+              </p>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="block launch">
+        <div className="block-head">
+          <h2 className="block-title">{LAUNCH_VIDEO.title}</h2>
+          <p className="block-note">{LAUNCH_VIDEO.line}</p>
+        </div>
+        <InViewVideo slug={LAUNCH_VIDEO.slug} className="tile-video launch-video" />
+      </section>
+
+      <section id="work" className="block">
+        <div className="block-head">
+          <h2 className="block-title">Clep picks the effect.</h2>
+          <p className="block-note">It reads the page and the recording, then decides what goes where.</p>
+        </div>
+        <div className="pacing" aria-label="How Clep paces a recording">
+          {PACING.map(([moment, speed]) => (
+            <span key={moment}><strong>{speed}</strong> {moment}</span>
+          ))}
+        </div>
+        <div className="demos">
+          {EFFECTS.map((effect) => (
+            <article key={effect.slug} className="tile">
+              <InViewVideo slug={effect.slug} className="tile-video" />
+              <p className="tile-detected">Saw: {effect.detected}</p>
+              <h3>{effect.title}</h3>
+              <p>{effect.line}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="block">
+        <h2 className="block-title">Three ways to connect.</h2>
+        <p className="block-note">Same engine, same key, whichever your agent speaks.</p>
+        <div className="ways">
+          {WAYS.map((way) => (
+            <div key={way.name} className="way">
+              <h3>{way.name}</h3>
+              <p>{way.text}</p>
+              <code>{way.code}</code>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="block questions">
+        <h2 className="block-title">Common questions.</h2>
+        {FAQ.map((item) => (
+          <details key={item.q}>
+            <summary>{item.q}</summary>
+            <p>{item.a}</p>
+          </details>
+        ))}
+      </section>
+
+      <section className="closer">
+        <h2 className="display small">
+          Ship it. <span className="accent">We&apos;ll film it.</span>
+        </h2>
+        <CopyCommand command={SETUP_COMMAND} />
+        <a href="/invite" className="get-key">{SIGNUP_LABEL}</a>
+      </section>
+
+      <footer className="home-foot">
+        <ClepLogo height={20} />
+        <span>© 2026 clep</span>
+        <nav>
+          <a href={SKILL_URL}>Skill</a>
+          <a href="/login">Enter key</a>
+          <a href="/dashboard">Dashboard</a>
+        </nav>
+      </footer>
     </div>
   );
 }
 
-export default function Page() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [rot, setRot] = useState(0);
-
-  useEffect(() => {
-    const t = window.setInterval(() => setRot((i) => (i + 1) % ROTATE.length), 2600);
-    return () => window.clearInterval(t);
-  }, []);
-
-  const navGo = (id: string) => {
-    setMenuOpen(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  };
-
+function RingMark() {
   return (
-    <div className="lp">
-      {/* HERO — sky card with nav inside */}
-      <header id="top" className="sky">
-        <div className="sky-bg" aria-hidden />
-        <div className="sky-nav">
-          <a className="brand" href="#top" aria-label="clep — home">
-            <ClepLogo height={26} color="#fff" />
-          </a>
-          <nav className="sky-links">
-            <a href="#how">How it works</a>
-            <a href="#templates">Templates</a>
-            <a href="#capture">Capture</a>
-            <a href="#pricing">Pricing</a>
-          </nav>
-          <div className="sky-actions">
-            {!BETA && (
-              <a href="/login" className="sky-login">
-                Enter key
-              </a>
-            )}
-            <a href={SIGNUP_HREF} className="pill-btn pill-lime pill-sm">
-              {SIGNUP_LABEL}
-            </a>
-            <button
-              className="sky-burger"
-              aria-label={menuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen(!menuOpen)}
-            >
-              {menuOpen ? "✕" : "☰"}
-            </button>
-          </div>
-          {menuOpen && (
-            <div className="sky-menu">
-              <a onClick={() => navGo("how")}>How it works</a>
-              <a onClick={() => navGo("templates")}>Templates</a>
-              <a onClick={() => navGo("capture")}>Capture</a>
-              <a onClick={() => navGo("pricing")}>Pricing</a>
-              <a href="/dashboard">Dashboard</a>
-              {!BETA && <a href="/login">Enter key</a>}
-            </div>
-          )}
-        </div>
-
-        <section className="sky-hero">
-          <h1 className="sky-title hero-anim d1">
-            Launch your product
-            <br />
-            <span className="lx-rot" aria-live="polite">
-              <em key={rot} className="lx-rot-word">
-                {ROTATE[rot]}
-              </em>
-            </span>
-          </h1>
-          <p className="sky-sub hero-anim d2">
-            The fastest, cheapest way to make launch videos. Paste your site, describe the video, and get a
-            studio-grade motion piece in your brand.
-          </p>
-          <div className="sky-cta hero-anim d3">
-            <a className="pill-btn pill-glass" href="#templates">
-              See templates
-            </a>
-            <a className="pill-btn pill-lime" href={SIGNUP_HREF}>
-              {SIGNUP_LABEL}
-              <i className="pill-ico" aria-hidden>
-                ↗
-              </i>
-            </a>
-          </div>
-        </section>
-
-        <div className="arc hero-anim d4" aria-hidden>
-          {ARC.map(([id, pos]) => {
-            const tp = TEMPLATES.find((x) => x.id === id);
-            return (
-              <div key={id} className={`arc-card ${pos}`}>
-                <video src={`/templates/${id}.mp4`} poster={`/templates/${id}.jpg`} muted loop autoPlay playsInline preload="metadata" />
-                {pos === "a-c" ? (
-                  <span className="arc-make">
-                    <i>+</i> Make a video
-                  </span>
-                ) : (
-                  <span className="arc-tag">{tp?.name}</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <p className="sky-proof hero-anim d5">
-          <span>No editor</span>
-          <span>No After Effects</span>
-          <span>Free to start</span>
-        </p>
-      </header>
-
-      {/* TEMPLATE STRIP */}
-      <div className="strip" aria-hidden>
-        <div className="strip-track">
-          {[...TEMPLATES, ...TEMPLATES, ...TEMPLATES, ...TEMPLATES].map((t, i) => (
-            <span key={i} className="strip-item">
-              <i>✦</i>
-              {t.name}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <main className="wrap">
-        {/* HOW — bento */}
-        <Reveal className="section roomy" id="how">
-          <div className="section-head">
-            <div className="eyebrow">How it works</div>
-            <h2 className="h2">
-              From your site <span className="chip-ico blue">⌘</span> to a launch video{" "}
-              <span className="chip-ico lime">▶</span> <em className="lx-em">in minutes, not weeks.</em>
-            </h2>
-          </div>
-          <div className="bento">
-            <div className="bn bn-img">
-              <video className="bn-vid" src="/templates/feature-film.mp4" poster="/templates/feature-film.jpg" muted loop autoPlay playsInline preload="metadata" aria-hidden />
-              <span className="bn-url">yourproduct.com</span>
-              <div className="bn-img-card">
-                <span className="bn-k">01 · Paste your site</span>
-                <b className="bn-big">Your brand</b>
-                <p>We pull your real colors, fonts, logo, copy and screenshots.</p>
-              </div>
-            </div>
-            <div className="bn bn-grey">
-              <span className="bn-k">02 · Describe it</span>
-              <b className="bn-big">Just say it.</b>
-              <div className="bn-chat">
-                <div className="u">Punchy teaser for Tuesday&apos;s launch</div>
-                <div className="b">
-                  <span className="ms-ava">✦</span>
-                  On it — kinetic type, snappy pace, 9:16.
-                </div>
-              </div>
-              <p>Chat what you want — or pick a template. Tweak anything.</p>
-            </div>
-            <div className="bn-col">
-              <div className="bn bn-lime">
-                <span className="bn-k">03 · Ship it</span>
-                <b className="bn-big">1080p MP4</b>
-                <p>Render a finished video for X, LinkedIn, TikTok or your site.</p>
-              </div>
-              <div className="bn bn-dark">
-                <span className="bn-k">Formats · 16:9 · 9:16 · 1:1 · 4:5</span>
-                <b className="bn-big">4</b>
-              </div>
-            </div>
-          </div>
-        </Reveal>
-
-        {/* TEMPLATES */}
-        <Reveal className="section roomy" id="templates">
-          <div className="section-head">
-            <div className="eyebrow">Templates</div>
-            <h2 className="h2">
-              Looks that actually ship. <em className="lx-em">Your brand drops straight in.</em>
-            </h2>
-            <p className="lead">Directed from the launch videos top startups post every week.</p>
-            <a className="pill-btn pill-dark" href={SIGNUP_HREF} style={{ marginTop: 20 }}>
-              {SIGNUP_LABEL}
-              <i className="pill-ico" aria-hidden>
-                ↗
-              </i>
-            </a>
-          </div>
-          <DemoPlayer />
-          <div className="tray">
-            {TEMPLATES.map((t, i) => (
-              <Reveal key={t.id} delay={i * 70} className="tc">
-                <div
-                  className="tc-media"
-                  onMouseEnter={(e) => e.currentTarget.querySelector("video")?.play().catch(() => {})}
-                  onMouseLeave={(e) => {
-                    const v = e.currentTarget.querySelector("video");
-                    if (v) {
-                      v.pause();
-                      v.currentTime = 0;
-                    }
-                  }}
-                >
-                  <video src={`/templates/${t.id}.mp4`} poster={`/templates/${t.id}.jpg`} muted loop playsInline preload="none" />
-                </div>
-                <div className="tc-row">
-                  <span className="ico-sq">✦</span>
-                  <span className="tc-tag">{t.tag}</span>
-                </div>
-                <h3>{t.name}</h3>
-                <p>{t.desc}</p>
-              </Reveal>
-            ))}
-            <Reveal delay={5 * 70} className="tc tc-more">
-              <span className="ico-sq dark">＋</span>
-              <h3>More every week</h3>
-              <p>Or just describe the video — the director picks the look.</p>
-            </Reveal>
-          </div>
-        </Reveal>
-
-        {/* EDITABLE */}
-        <Reveal className="section roomy">
-          <div className="section-head">
-            <div className="eyebrow">Everything is editable</div>
-            <h2 className="h2">
-              Tell it like a director. <em className="lx-em">It edits one line.</em>
-            </h2>
-            <p className="lead">Change copy, fonts or colors in the editor — or just say it. No re-doing the whole video.</p>
-          </div>
-          <div className="edit-grid">
-            <div className="edit-chat" aria-hidden>
-              <span className="bn-k">Director chat</span>
-              <div className="lx-cm-msg user">Make it calmer and vertical for TikTok</div>
-              <div className="lx-cm-msg bot">
-                <span className="ms-ava">✦</span>
-                Done — slowed the pace, softer transitions, now 9:16.
-              </div>
-              <div className="lx-cm-msg user">Change the button to “Join the beta”</div>
-              <div className="lx-cm-msg bot">
-                <span className="ms-ava">✦</span>
-                Updated the end card.
-              </div>
-              <div className="lx-cm-input">
-                Tell me what to change…<span className="lx-prompt-go">→</span>
-              </div>
-            </div>
-            <div className="edit-tiles">
-              {CONTROLS.map(([k, v], i) => (
-                <div key={k} className={`et ${i === 1 ? "lime" : i === 7 ? "dark" : ""}`}>
-                  <span className="ico-sq">{["Aa", "◐", "▦", "⏱", "T", "⇄", "◎", "▭"][i]}</span>
-                  <b>{k}</b>
-                  <span>{v}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Reveal>
-
-        {/* COMPARE */}
-        <Reveal className="section roomy">
-          <div className="section-head">
-            <div className="eyebrow">Why Clep</div>
-            <h2 className="h2">
-              Not an agency timeline. <em className="lx-em">Ship with every release.</em>
-            </h2>
-          </div>
-          <div className="cmp">
-            <div className="cmp-card">
-              <span className="bn-k">The usual way</span>
-              <b className="bn-big">Weeks</b>
-              <div className="cmp-flow">
-                {["Brief", "Storyboard", "Animate", "Revise", "Export"].map((s, i) => (
-                  <span key={s}>
-                    {i > 0 && <i aria-hidden>→</i>}
-                    <em>{s}</em>
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="cmp-card dark">
-              <span className="bn-k">Clep</span>
-              <b className="bn-big">Minutes</b>
-              <div className="cmp-flow">
-                {["Paste your site", "Describe it", "Video"].map((s, i) => (
-                  <span key={s}>
-                    {i > 0 && <i aria-hidden>→</i>}
-                    <em>{s}</em>
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Reveal>
-
-        {/* CAPTURE — COMING SOON */}
-        <Reveal className="section roomy" id="capture">
-          <div className="lx-capture">
-            <div className="lx-capture-copy">
-              <span className="cap-soon">Coming soon</span>
-              <h2>
-                Clep Capture — <em>straight from your code.</em>
-              </h2>
-              <p>
-                A Claude Code plugin that finds a feature in your codebase, drives the real UI in a browser — cursor and
-                all — and sends the recording to Motion. One command: <code>/clep</code>.
-              </p>
-              <a className="pill-btn pill-lime" href={SIGNUP_HREF}>
-                Get early access
-                <i className="pill-ico" aria-hidden>
-                  ↗
-                </i>
-              </a>
-            </div>
-            <div className="cap-steps">
-              {[
-                ["01", "Finds the feature", "Clep locates it in your codebase — no recording setup."],
-                ["02", "Runs it live", "Drives the real UI in a browser, cursor and all."],
-                ["03", "Ships the video", "Edited, graded, ready to post in your brand."],
-              ].map(([n, t, d]) => (
-                <div key={n} className="cap-step">
-                  <span>{n}</span>
-                  <div>
-                    <b>{t}</b>
-                    <p>{d}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Reveal>
-
-        {/* PRICING */}
-        <Reveal className="section roomy" id="pricing">
-          <div className="section-head">
-            <div className="eyebrow">Pricing</div>
-            <h2 className="h2">
-              Start creating for free. <em className="lx-em">Upgrade when you ship more.</em>
-            </h2>
-          </div>
-          <div className="pc-grid">
-            <div className="pc">
-              <span className="bn-k">Free</span>
-              <b className="bn-big">$0</b>
-              <ul>
-                <li>5 videos / month</li>
-                <li>1080p exports</li>
-                <li>All templates</li>
-              </ul>
-              <a className="pill-btn pill-dark" href={SIGNUP_HREF}>
-                {SIGNUP_LABEL}
-              </a>
-            </div>
-            <div className="pc dark">
-              <span className="bn-k">
-                Pro <i className="pc-pop">Popular</i>
-              </span>
-              <b className="bn-big">
-                $12<small>/ month</small>
-              </b>
-              <ul>
-                <li>30 videos / month</li>
-                <li>1080p60 exports</li>
-                <li>Priority rendering</li>
-              </ul>
-              <a className="pill-btn pill-lime" href={SIGNUP_HREF}>
-                {BETA ? "Ask for invite" : "Get Pro"}
-              </a>
-            </div>
-            <div className="pc">
-              <span className="bn-k">Studio</span>
-              <b className="bn-big">
-                $29<small>/ month</small>
-              </b>
-              <ul>
-                <li>100 videos / month</li>
-                <li>Everything in Pro</li>
-                <li>Team workspace</li>
-              </ul>
-              <a className="pill-btn pill-dark" href={SIGNUP_HREF}>
-                {BETA ? "Ask for invite" : "Get Studio"}
-              </a>
-            </div>
-          </div>
-        </Reveal>
-
-        {/* FINAL CTA */}
-        <Reveal className="final-dark">
-          <div className="eyebrow">Get started</div>
-          <h2>
-            Ship a launch video <em>today.</em>
-          </h2>
-          <p>Paste your site. Clep does the motion.</p>
-          <a className="pill-btn pill-lime" href={SIGNUP_HREF}>
-            {SIGNUP_LABEL}
-            <i className="pill-ico" aria-hidden>
-              ↗
-            </i>
-          </a>
-        </Reveal>
-
-        <footer className="lp-foot">
-          <div className="lp-foot-grid">
-            <div>
-              <ClepLogo height={24} />
-              <p className="foot-tag">Launch every day.</p>
-            </div>
-            <nav>
-              <b>Product</b>
-              <a href="#how">How it works</a>
-              <a href="#templates">Templates</a>
-              <a href="#pricing">Pricing</a>
-            </nav>
-            <nav>
-              <b>Build</b>
-              <a href="/dashboard">Dashboard</a>
-              <a href="#capture">Clep Capture</a>
-            </nav>
-            <nav>
-              <b>Account</b>
-              {BETA ? (
-                <a href="/invite">Ask for invite</a>
-              ) : (
-                <>
-                  <a href="/login">Enter key</a>
-                  <a href="/invite">Get access</a>
-                </>
-              )}
-            </nav>
-          </div>
-          <div className="lp-foot-mark" aria-hidden>
-            <ClepLogo height={260} color="#efefed" mark={false} />
-          </div>
-          <div className="lp-foot-bar">
-            <span>© 2026 Clep</span>
-            <span>Describe it. Render it. Ship it.</span>
-          </div>
-        </footer>
-      </main>
-
-    </div>
+    <svg className="ring-mark" viewBox="0 -14 200 134" aria-hidden preserveAspectRatio="none">
+      <path d="M18 70 C 14 30, 80 12, 128 18 C 176 24, 196 52, 182 80 C 166 108, 92 114, 50 102 C 20 94, 8 76, 24 56" />
+      <path d="M128 4 L 128 -10" />
+      <path d="M150 6 L 160 -6" />
+      <path d="M170 16 L 184 6" />
+    </svg>
   );
 }

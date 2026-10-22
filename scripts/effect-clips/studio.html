@@ -1,0 +1,694 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=block" rel="stylesheet" />
+<style>
+  :root { --ink:#171512; --soft:#6f6a61; --hair:#ece8e1; --orange:#ff6a3d; --cream:#f6efdf; --green:#1f9d5b; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1280px; height: 720px; overflow: hidden; background: var(--cream); }
+  body { font-family: "Public Sans", system-ui, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+  #bg, #bg > div { position: absolute; inset: 0; }
+  #cam { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: 0 0; }
+  #hud { position: absolute; inset: 0; pointer-events: none; }
+  .warm { background: radial-gradient(120% 90% at 15% 10%, #ffd2b8 0%, transparent 55%), radial-gradient(90% 80% at 90% 90%, #ffc39e 0%, transparent 60%), linear-gradient(135deg, #f8e7d2, #f3dcc2); }
+
+  /* window */
+  .win { position: absolute; background: #fff; border-radius: 14px; overflow: hidden;
+         box-shadow: 0 40px 90px -30px rgba(80,40,10,.38), 0 0 0 1px rgba(23,21,18,.07); }
+  .bar { height: 38px; display: flex; align-items: center; gap: 7px; padding: 0 14px; background: #f8f6f2; border-bottom: 1px solid var(--hair); position: relative; }
+  .bar i { width: 11px; height: 11px; border-radius: 50%; }
+  .bar i:nth-child(1) { background: #ff5f57; } .bar i:nth-child(2) { background: #febc2e; } .bar i:nth-child(3) { background: #28c840; }
+  .url { position: absolute; left: 50%; transform: translateX(-50%); font: 12px "IBM Plex Mono", monospace; color: #8a847a; background: #fff; padding: 4px 16px; border-radius: 7px; border: 1px solid var(--hair); white-space: nowrap; }
+  .body { position: absolute; top: 38px; left: 0; right: 0; bottom: 0; overflow: hidden; }
+
+  /* app pieces */
+  .side { position: absolute; left: 0; top: 0; bottom: 0; width: 196px; border-right: 1px solid var(--hair); padding: 22px 14px; background: #fcfbf9; }
+  .logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; margin: 0 8px 22px; }
+  .logo b { width: 20px; height: 20px; border-radius: 6px; background: var(--ink); }
+  .nav { padding: 8px 10px; border-radius: 8px; font-size: 13.5px; color: var(--soft); margin-bottom: 2px; }
+  .nav.on { background: #f1ede6; color: var(--ink); font-weight: 600; }
+  .main { position: absolute; left: 196px; right: 0; top: 0; bottom: 0; padding: 30px 36px; }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { margin-top: 4px; font-size: 13.5px; color: var(--soft); }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; border: 0; background: var(--orange); color: #fff; font: 600 14px "Public Sans", sans-serif; padding: 11px 18px; border-radius: 10px; white-space: nowrap; }
+  .btn.dark { background: var(--ink); }
+  .btn.ghost { background: #f3f0ea; color: var(--ink); }
+  .chip { display: inline-block; padding: 6px 12px; border: 1px solid var(--hair); border-radius: 999px; font-size: 12.5px; color: var(--soft); margin-right: 6px; }
+  .spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; }
+  .spin.dark { border-color: rgba(23,21,18,.15); border-top-color: var(--ink); }
+  .row { display: flex; align-items: center; gap: 14px; padding: 13px 4px; border-bottom: 1px solid var(--hair); }
+  .av { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; font-weight: 700; font-size: 14px; color: #fff; }
+  .row .nm { font-weight: 600; font-size: 14.5px; } .row .mt { font-size: 12.5px; color: var(--soft); }
+  .score { margin-left: auto; font: 500 12.5px "IBM Plex Mono", monospace; padding: 4px 10px; border-radius: 999px; background: #fff1eb; color: #c2441c; }
+  .card { position: absolute; border: 1px solid var(--hair); border-radius: 14px; background: #fff; padding: 20px; }
+  .bars { display: flex; align-items: flex-end; gap: 8px; }
+  .bars span { flex: 1; border-radius: 5px 5px 2px 2px; background: var(--orange); }
+  .prog { height: 8px; border-radius: 99px; background: #f1ede6; overflow: hidden; }
+  .prog > div { height: 100%; background: var(--orange); border-radius: 99px; width: 0; }
+  .line { height: 10px; border-radius: 5px; background: #ece8e1; margin-bottom: 10px; }
+
+  /* cursor + fx */
+  #cursor { position: absolute; left: 0; top: 0; width: 26px; height: 34px; margin: -3px 0 0 -4px; transform-origin: 4px 3px; z-index: 50; filter: drop-shadow(0 3px 5px rgba(0,0,0,.28)); }
+  .trail { position: absolute; width: 26px; height: 34px; margin: -3px 0 0 -4px; z-index: 49; }
+  .ripple { position: absolute; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; border: 3px solid var(--orange); background: rgba(255,106,61,.18); z-index: 48; }
+
+  /* hud */
+  .pill { position: absolute; font: 500 14px "IBM Plex Mono", monospace; padding: 8px 14px; border-radius: 999px; background: rgba(23,21,18,.86); color: #fff; white-space: nowrap; }
+  .pill em { font-style: normal; color: var(--orange); }
+  .key { display: inline-grid; place-items: center; min-width: 52px; height: 52px; padding: 0 14px; margin: 0 5px; border-radius: 12px; background: rgba(23,21,18,.88); color: #fff; font: 600 24px "Public Sans", sans-serif; box-shadow: 0 4px 0 rgba(0,0,0,.35); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"></div>
+  <div id="cam"><div id="world"></div><div id="fx"></div>
+    <svg id="cursor" viewBox="0 0 26 34"><path d="M3 2 L3 26 L9.5 20 L14 30.5 L18.2 28.6 L13.8 18.6 L22.5 18.6 Z" fill="#171512" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/></svg>
+  </div>
+  <div id="hud"></div>
+</div>
+<script>
+// ---------- helpers ----------
+const W = 1280, H = 720;
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const out = (x) => 1 - Math.pow(1 - x, 3);
+const lerp = (a, b, p) => a + (b - a) * p;
+const prog = (t, a, b, e = ease) => e(clamp((t - a) / (b - a)));
+const fade = (t, a, b, c, d) => prog(t, a, b) * (1 - prog(t, c, d));   // in a→b, out c→d
+function track(t, keys) {
+  if (t <= keys[0][0]) return keys[0][1];
+  for (let i = 1; i < keys.length; i++) {
+    if (t <= keys[i][0]) {
+      const [t0, v0] = keys[i - 1], [t1, v1] = keys[i];
+      const p = ease((t - t0) / (t1 - t0));
+      return Array.isArray(v0) ? v0.map((x, j) => lerp(x, v1[j], p)) : lerp(v0, v1, p);
+    }
+  }
+  return keys[keys.length - 1][1];
+}
+function R(el) { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, l: r.left, t: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height }; }
+function seeded(seed) { return () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646; }
+function makeWindow(world, { x = 100, y = 60, w = 1080, h = 600, url = "acme.app" } = {}) {
+  const el = document.createElement("div");
+  el.className = "win";
+  Object.assign(el.style, { left: x + "px", top: y + "px", width: w + "px", height: h + "px" });
+  el.innerHTML = `<div class="bar"><i></i><i></i><i></i><span class="url">${url}</span></div><div class="body"></div>`;
+  world.appendChild(el);
+  return el.querySelector(".body");
+}
+const side = (items, on) => `<div class="side"><div class="logo"><b></b>Acme</div>${items.map((n, i) => `<div class="nav ${i === on ? "on" : ""}">${n}</div>`).join("")}</div>`;
+const HOME = [1, 640, 360];
+const typed = (s, t, a, b) => s.slice(0, Math.round(s.length * clamp((t - a) / (b - a))));
+const caret = (on) => `<span style="display:inline-block;width:2px;height:1.1em;vertical-align:-0.18em;background:var(--orange);margin-left:1px;opacity:${on ? 1 : 0}"></span>`;
+
+// ---------- scenes ----------
+// Each scene: dur, poster, setup(world, hud) -> ctx, cam(t) -> [scale, fx, fy], cursor(t) -> [x, y] | null, clicks: [{t, x, y}], render(t, ctx)
+const S = {};
+
+/* 1. Zoom-ins */
+S["effect-zoom"] = {
+  dur: 5, poster: 2.9,
+  setup(world) {
+    const b = makeWindow(world, { url: "acme.app/leads" });
+    const leads = [["N", "Northwind", "Fintech · 84 people", 92, "#ff6a3d"], ["L", "Lumen Pay", "Payments · 51 people", 88, "#3b82f6"], ["H", "Harbor", "Lending · 120 people", 81, "#16a34a"], ["K", "Kite Ledger", "Accounting · 37 people", 77, "#a855f7"], ["T", "Tallyhub", "Treasury · 64 people", 74, "#eab308"], ["O", "Orbital", "Banking API · 98 people", 70, "#0ea5e9"]];
+    b.innerHTML = side(["Overview", "Leads", "Reports", "Settings"], 1) + `<div class="main">
+      <div class="head"><div><h1>Leads</h1><p class="sub">Companies that match your ideal customer.</p></div>
+      <button class="btn" id="go"><span id="golbl">Find leads</span></button></div>
+      <div style="margin:20px 0 6px"><span class="chip">Series A–B</span><span class="chip">Fintech</span><span class="chip">US + EU</span></div>
+      <div id="rows">${leads.map(([a, n, m, s, c]) => `<div class="row"><div class="av" style="background:${c}">${a}</div><div><div class="nm">${n}</div><div class="mt">${m}</div></div><span class="score">${s} fit</span></div>`).join("")}</div></div>`;
+    const btn = R($("#go")), rows = $$("#rows .row").map(R);
+    this.clicks = [{ t: 1.75, x: btn.x, y: btn.y }];
+    this.camKeys = [[0, HOME], [0.6, HOME], [1.45, [2.0, btn.x - 90, btn.y + 40]], [2.15, [2.0, btn.x - 90, btn.y + 40]], [2.75, [1.65, rows[1].x - 120, rows[1].y]], [3.7, [1.65, rows[1].x - 120, rows[4].y]], [4.2, [1.65, rows[1].x - 120, rows[4].y]], [4.9, HOME]];
+    this.curKeys = [[0, [720, 610]], [0.45, [720, 610]], [1.6, [btn.x - 6, btn.y + 2]], [2.3, [btn.x - 6, btn.y + 2]], [3.2, [btn.x - 160, rows[3].y + 30]], [4.3, [btn.x - 160, rows[3].y + 30]], [5, [720, 610]]];
+    return { rows: $$("#rows .row"), lbl: $("#golbl") };
+  },
+  cam(t) { return track(t, this.camKeys); },
+  cursor(t) { return track(t, this.curKeys); },
+  render(t, c) {
+    const finding = t > 1.75 && t < 3.4;
+    c.lbl.innerHTML = finding ? `<span style="display:inline-flex;gap:8px;align-items:center"><span class="spin" style="transform:rotate(${t * 720}deg)"></span>Finding…</span>` : t >= 3.4 && t < 4.7 ? "Found 6" : "Find leads";
+    const gone = 1 - prog(t, 4.5, 4.95);
+    c.rows.forEach((r, i) => { const p = prog(t, 2.1 + i * 0.22, 2.45 + i * 0.22, out); r.style.opacity = p * gone; r.style.transform = `translateY(${(1 - p) * 14}px)`; });
+  },
+};
+
+/* 2. Typing */
+S["effect-typing"] = {
+  dur: 5, poster: 2.6,
+  text: "Churn by plan, last 90 days",
+  setup(world) {
+    const b = makeWindow(world, { url: "acme.app/ask" });
+    b.innerHTML = side(["Ask", "Dashboards", "Reports", "Settings"], 0) + `<div class="main" style="display:flex;flex-direction:column;align-items:center;padding-top:120px">
+      <h1 style="font-size:30px">What should we look into?</h1><p class="sub" style="margin-top:8px">Ask a question about your product data.</p>
+      <div id="box" style="margin-top:30px;width:640px;height:62px;border:1.5px solid var(--hair);border-radius:14px;display:flex;align-items:center;padding:0 10px 0 20px;box-shadow:0 8px 30px -14px rgba(0,0,0,.18)">
+        <div style="flex:1;font-size:19px;white-space:nowrap;overflow:hidden"><span id="ph" style="color:#b3ada3;position:absolute">Ask Acme…</span><span id="txt"></span><span id="car"></span></div>
+        <button class="btn" id="send" style="padding:10px 14px">Ask ↵</button></div>
+      <div style="margin-top:20px"><span class="chip">Weekly actives</span><span class="chip">Top referrers</span><span class="chip">Trial → paid</span></div></div>`;
+    const box = R($("#box")), send = R($("#send"));
+    this.box = box;
+    this.clicks = [{ t: 3.75, x: send.x, y: send.y }];
+    return { txt: $("#txt"), ph: $("#ph"), car: $("#car"), boxEl: $("#box"), send: $("#send") };
+  },
+  cam(t) {
+    const b = this.box, s = track(t, [[0, 1], [0.35, 1], [1.05, 2.15], [3.9, 2.15], [4.7, 1]]);
+    const w = this._w || 0, cx = clamp(b.l + 20 + w + 60, b.l + 300, b.r - 290);
+    const fx = lerp(640, cx, prog(t, 0.35, 1.05) * (1 - prog(t, 3.9, 4.7)));
+    return [s, fx, lerp(360, b.y, prog(t, 0.35, 1.05) * (1 - prog(t, 3.9, 4.7)))];
+  },
+  cursor() { return null; },
+  render(t, c) {
+    const s = t < 4.6 ? typed(this.text, t, 1.1, 3.3) : "";
+    c.txt.textContent = s;
+    c.ph.style.opacity = s ? 0 : 1;
+    c.car.innerHTML = caret(t > 0.9 && t < 3.75 && (t > 1.1 && t < 3.3 ? true : Math.floor(t * 2.5) % 2 === 0));
+    this._w = c.txt.offsetWidth;
+    c.boxEl.style.borderColor = t > 0.9 && t < 4.2 ? "var(--orange)" : "var(--hair)";
+    c.send.style.transform = `scale(${t > 3.72 && t < 3.86 ? 0.93 : 1})`;
+  },
+  speed(t) { return t > 1.05 && t < 3.35 ? ["1.7x", fade(t, 1.0, 1.2, 3.2, 3.4)] : null; },
+};
+
+/* 3. Clicks & uploads */
+S["effect-click-upload"] = {
+  dur: 5.5, poster: 3.0,
+  setup(world) {
+    const b = makeWindow(world, { url: "acme.app/convert" });
+    b.innerHTML = `<div class="side"><div class="logo"><b></b>Acme</div><div class="sub" style="margin:0 8px 10px;font-size:11px;letter-spacing:.06em;text-transform:uppercase">Recent files</div>
+      <div class="nav" id="file" style="display:flex;gap:9px;align-items:center;color:var(--ink)"><span style="width:22px;height:26px;border-radius:4px;background:#e5484d;color:#fff;font:700 8px sans-serif;display:grid;place-items:center">PDF</span>q3-report.pdf</div>
+      <div class="nav" style="display:flex;gap:9px;align-items:center"><span style="width:22px;height:26px;border-radius:4px;background:#d6d1c8"></span>notes.docx</div>
+      <div class="nav" style="display:flex;gap:9px;align-items:center"><span style="width:22px;height:26px;border-radius:4px;background:#d6d1c8"></span>deck.key</div></div>
+      <div class="main"><h1>Convert to Markdown</h1><p class="sub">PDF, Word or slides in. Clean markdown out.</p>
+      <div id="dz" style="margin-top:28px;height:330px;border:2px dashed #dcd6cc;border-radius:16px;display:grid;place-items:center;text-align:center;position:relative">
+        <div id="dzIdle"><div style="font-size:34px">⇣</div><div style="font-weight:600;margin-top:6px">Drop a file here</div><div class="sub">up to 50 MB</div></div>
+        <div id="dzWork" style="position:absolute;width:440px;text-align:left">
+          <div style="display:flex;gap:12px;align-items:center"><span id="ico" style="width:36px;height:42px;border-radius:6px;background:#e5484d;color:#fff;font:700 10px sans-serif;display:grid;place-items:center">PDF</span>
+          <div style="flex:1"><div id="fname" style="font-weight:600">q3-report.pdf</div><div class="sub" id="fstat">Converting…</div></div><span id="chk" style="font-size:22px;color:var(--green)">✓</span></div>
+          <div class="prog" style="margin-top:16px"><div id="bar"></div></div></div></div></div>`;
+    const file = R($("#file")), dz = R($("#dz"));
+    this.dz = dz;
+    this.clicks = [{ t: 0.85, x: file.x - 40, y: file.y }, { t: 2.0, x: dz.x, y: dz.y }];
+    this.camKeys = [[0, HOME], [1.2, HOME], [2.0, [1.55, dz.x, dz.y]], [4.5, [1.55, dz.x, dz.y]], [5.2, HOME]];
+    this.curKeys = [[0, [700, 600]], [0.8, [file.x - 40, file.y]], [0.9, [file.x - 40, file.y]], [1.95, [dz.x, dz.y]], [2.9, [dz.x + 120, dz.y + 110]], [4.6, [dz.x + 120, dz.y + 110]], [5.5, [700, 600]]];
+    const chip = document.createElement("div");
+    chip.innerHTML = `<div style="display:flex;gap:8px;align-items:center;background:#fff;border-radius:10px;padding:8px 12px;box-shadow:0 12px 30px -8px rgba(0,0,0,.3);font-size:13px;font-weight:600"><span style="width:18px;height:22px;border-radius:3px;background:#e5484d"></span>q3-report.pdf</div>`;
+    Object.assign(chip.style, { position: "absolute", zIndex: 40 });
+    $("#fx").appendChild(chip);
+    return { chip, idle: $("#dzIdle"), work: $("#dzWork"), bar: $("#bar"), stat: $("#fstat"), fname: $("#fname"), ico: $("#ico"), chk: $("#chk"), dzEl: $("#dz") };
+  },
+  cam(t) { return track(t, this.camKeys); },
+  cursor(t) { return track(t, this.curKeys); },
+  render(t, c) {
+    const drag = t > 0.88 && t < 2.0, [x, y] = this.cursor(t);
+    c.chip.style.opacity = drag ? 1 : 0;
+    c.chip.style.transform = `translate(${x + 14}px, ${y + 16}px) rotate(-4deg)`;
+    const over = t > 1.55 && t < 2.1;
+    c.dzEl.style.borderColor = over ? "var(--orange)" : "#dcd6cc";
+    c.dzEl.style.background = over ? "#fff6f2" : "transparent";
+    const working = t >= 2.0 && t < 5.15;
+    c.idle.style.opacity = working ? 0 : 1;
+    c.work.style.opacity = working ? prog(t, 2.0, 2.2) * (1 - prog(t, 4.95, 5.15)) : 0;
+    const p = prog(t, 2.15, 3.75, (x) => x);
+    c.bar.style.width = p * 100 + "%";
+    const done = t > 3.8;
+    c.stat.textContent = done ? "14 pages · 3 tables · 0.9 s" : `Converting… ${Math.round(p * 100)}%`;
+    c.fname.textContent = done ? "q3-report.md" : "q3-report.pdf";
+    c.ico.style.background = done ? "var(--ink)" : "#e5484d";
+    c.ico.textContent = done ? "MD" : "PDF";
+    c.chk.style.opacity = done ? prog(t, 3.8, 4.0) : 0;
+    c.bar.style.background = done ? "var(--green)" : "var(--orange)";
+  },
+  speed(t) { return t > 2.1 && t < 3.8 ? ["2x", fade(t, 2.1, 2.3, 3.6, 3.8)] : null; },
+};
+
+/* 4. Multi-step flows */
+S["effect-multistep"] = {
+  dur: 6, poster: 3.4,
+  steps: [["Install", "$ npm i @acme/cli", "added 1 package in 2s"], ["Trace", "Recording the session", "38 events captured"], ["Run", "Replaying 18 checks", "18 of 18 passed"], ["Report", "Building the summary", "Report ready · 3 charts"]],
+  at(i) { return 0.2 + 1.3 * i; },
+  setup(world) {
+    const b = makeWindow(world, { url: "acme.app/pipeline" });
+    const cw = 480, ch = 220, pos = [[40, 86], [540, 86], [40, 326], [540, 326]];
+    b.innerHTML = `<div style="padding:28px 40px"><h1>Release pipeline</h1><p class="sub">Four steps, one take.</p></div>` + this.steps.map(([n, a], i) => `
+      <div class="card" style="left:${pos[i][0]}px;top:${pos[i][1]}px;width:${cw}px;height:${ch}px">
+        <div style="display:flex;align-items:center;gap:10px"><span class="mono" style="color:var(--orange);font-size:13px">0${i + 1}</span><b style="font-size:18px">${n}</b>
+        <span class="st" style="margin-left:auto;font-size:13px;color:var(--soft)">Pending</span></div>
+        <div class="mono ln" style="margin-top:22px;font-size:14px;color:var(--soft)">${a}</div>
+        <div class="prog" style="margin-top:22px"><div></div></div>
+        <button class="btn ghost run" style="margin-top:22px;padding:9px 16px;font-size:13px">Run step</button></div>`).join("");
+    const cards = $$(".card", b), runs = $$(".run", b).map(R), cr = cards.map(R);
+    this.clicks = runs.map((r, i) => ({ t: this.at(i) + 0.45, x: r.x, y: r.y }));
+    const cam = [[0, HOME]];
+    cr.forEach((r, i) => { cam.push([this.at(i) + 0.3, [1.8, r.x + 30, r.y]], [this.at(i) + 1.05, [1.8, r.x + 30, r.y]]); });
+    cam.push([this.at(3) + 1.2, [1.8, cr[3].x + 30, cr[3].y]], [5.6, HOME]);
+    this.camKeys = cam;
+    const cur = [[0, [640, 640]]];
+    runs.forEach((r, i) => { cur.push([this.at(i) + 0.4, [r.x - 4, r.y + 2]], [this.at(i) + 0.75, [r.x - 4, r.y + 2]]); });
+    cur.push([5.8, [640, 640]]);
+    this.curKeys = cur;
+    return { cards };
+  },
+  cam(t) { return track(t, this.camKeys); },
+  cursor(t) { return track(t, this.curKeys); },
+  render(t, c) {
+    c.cards.forEach((card, i) => {
+      const a = this.at(i) + 0.45, p = prog(t, a, a + 0.65, (x) => x), done = t > a + 0.65, run = t > a && !done;
+      const st = $(".st", card);
+      st.innerHTML = done ? `<span style="color:var(--green);font-weight:600">✓ Done</span>` : run ? `<span style="display:inline-flex;gap:6px;align-items:center;color:var(--ink)"><span class="spin dark" style="width:12px;height:12px;transform:rotate(${t * 720}deg)"></span>Running</span>` : "Pending";
+      $(".ln", card).textContent = done ? this.steps[i][2] : this.steps[i][1];
+      $(".ln", card).style.color = done ? "var(--green)" : "var(--soft)";
+      const bar = $(".prog > div", card);
+      bar.style.width = p * 100 + "%";
+      bar.style.background = done ? "var(--green)" : "var(--orange)";
+      card.style.borderColor = run ? "var(--orange)" : "var(--hair)";
+    });
+  },
+};
+
+/* 5. Scroll walkthroughs */
+S["effect-walkthrough"] = {
+  dur: 6, poster: 2.2,
+  setup(world) {
+    const b = makeWindow(world, { url: "acme.app" });
+    b.innerHTML = `<div id="page" style="position:absolute;left:0;right:0;top:0">
+      <section style="height:562px;padding:90px 0 0;text-align:center;background:linear-gradient(#fff,#fbf7f1)">
+        <span class="chip">New · v3.0</span>
+        <h1 style="font-size:52px;line-height:1.05;margin-top:22px">Reports your team<br/>actually reads.</h1>
+        <p class="sub" style="font-size:17px;margin-top:16px">Acme turns raw numbers into a weekly story.</p>
+        <div style="margin-top:28px;display:flex;gap:10px;justify-content:center"><button class="btn">Start free</button><button class="btn ghost">See a sample</button></div>
+        <div style="margin:46px auto 0;width:700px;height:150px;border-radius:14px 14px 0 0;border:1px solid var(--hair);border-bottom:0;background:#fff;padding:22px" class="bars"><span style="height:40%"></span><span style="height:62%"></span><span style="height:48%"></span><span style="height:80%"></span><span style="height:70%"></span><span style="height:95%"></span></div></section>
+      <section id="s1" style="padding:56px 60px;height:520px"><p class="mono" style="color:var(--orange);font-size:13px">FEATURES</p><h1 style="font-size:34px;margin-top:8px">Everything in one place.</h1>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:30px">${[["Live sync", "Pulls from Stripe, Postgres and Segment."], ["Smart digests", "One email, the five numbers that moved."], ["Shared notes", "Comment on any chart, right where it is."]].map(([h, p]) => `<div style="border:1px solid var(--hair);border-radius:14px;padding:22px;height:230px"><div style="width:40px;height:40px;border-radius:10px;background:#fff1eb"></div><b style="display:block;margin-top:18px;font-size:17px">${h}</b><p class="sub" style="margin-top:8px">${p}</p><div class="line" style="margin-top:22px;width:80%"></div><div class="line" style="width:55%"></div></div>`).join("")}</div></section>
+      <section id="s2" style="padding:56px 60px;height:560px;background:#fbf7f1"><p class="mono" style="color:var(--orange);font-size:13px">PRICING</p><h1 style="font-size:34px;margin-top:8px">Simple plans.</h1>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:30px">${[["Starter", "$0"], ["Team", "$29"], ["Scale", "$99"]].map(([h, p], i) => `<div style="border:1px solid ${i === 1 ? "var(--orange)" : "var(--hair)"};background:#fff;border-radius:14px;padding:24px;height:260px"><b style="font-size:16px">${h}</b><div style="font-size:38px;font-weight:700;margin-top:10px">${p}<span class="sub" style="font-size:14px"> /mo</span></div><div class="line" style="margin-top:22px;width:85%"></div><div class="line" style="width:70%"></div><div class="line" style="width:60%"></div><button class="btn ${i === 1 ? "" : "ghost"}" style="margin-top:12px;width:100%;justify-content:center">Choose ${h}</button></div>`).join("")}</div></section></div>`;
+    const top = R(b).t;
+    this.s1 = R($("#s1")).t - top - 10;
+    this.s2 = R($("#s2")).t - top - 10;
+    return { page: $("#page") };
+  },
+  scroll(t) { return track(t, [[0, 0], [1.0, 0], [1.7, this.s1], [2.8, this.s1], [3.5, this.s2], [4.6, this.s2], [5.4, 0]]); },
+  cam(t) { const s = 1 + 0.05 * (fade(t, 0.1, 0.8, 0.85, 1.1) + fade(t, 1.7, 2.4, 2.5, 2.8) + fade(t, 3.5, 4.2, 4.3, 4.6)); return [s, 640, 360]; },
+  cursor() { return null; },
+  render(t, c) { c.page.style.transform = `translateY(${-this.scroll(t)}px)`; },
+  tag(t) {
+    const tags = [["Hero", 0.1, 0.95], ["Features", 1.75, 2.75], ["Pricing", 3.55, 4.55]];
+    for (const [n, a, b] of tags) if (t > a && t < b) return [n, fade(t, a, a + 0.2, b - 0.2, b)];
+    return null;
+  },
+};
+
+/* 6. Any format */
+S["effect-vertical"] = {
+  dur: 5.6, poster: 3.0,
+  setup(world) {
+    const win = document.createElement("div");
+    win.className = "win";
+    win.innerHTML = `<div class="bar"><i></i><i></i><i></i></div><div class="body" id="vb">
+      <div id="wide" style="position:absolute;left:50%;top:0;width:1080px;height:562px;margin-left:-540px;padding:40px 48px">
+        <p class="mono" style="color:var(--orange);font-size:13px">THIS WEEK</p><h1 style="font-size:34px;margin-top:6px">Signups up 38%</h1>
+        <div style="display:flex;gap:24px;margin-top:28px"><div class="bars vb" style="flex:1.6;height:330px;border:1px solid var(--hair);border-radius:14px;padding:24px">${"<span></span>".repeat(8)}</div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:16px">${[["2,481", "signups"], ["12.4%", "trial → paid"], ["$48k", "new MRR"]].map(([n, l]) => `<div style="border:1px solid var(--hair);border-radius:14px;padding:18px 22px;flex:1"><div style="font-size:30px;font-weight:700">${n}</div><div class="sub">${l}</div></div>`).join("")}</div></div></div>
+      <div id="tall" style="position:absolute;left:50%;top:0;width:372px;height:622px;margin-left:-186px;padding:30px 24px">
+        <p class="mono" style="color:var(--orange);font-size:12px">THIS WEEK</p><h1 style="font-size:32px;margin-top:6px;line-height:1.1">Signups<br/>up 38%</h1>
+        <div style="font-size:52px;font-weight:700;margin-top:18px;letter-spacing:-.03em">2,481</div><div class="sub">signups</div>
+        <div class="bars vb" style="height:250px;margin-top:22px;border:1px solid var(--hair);border-radius:14px;padding:18px;width:270px">${"<span></span>".repeat(8)}</div>
+        <div style="position:absolute;right:16px;bottom:40px;display:flex;flex-direction:column;gap:18px;align-items:center">${["♥", "✎", "↗"].map((i) => `<div style="width:42px;height:42px;border-radius:50%;background:#f3f0ea;display:grid;place-items:center;font-size:18px">${i}</div>`).join("")}</div></div></div>`;
+    world.appendChild(win);
+    return { win, wide: $("#wide"), tall: $("#tall"), bars: $$(".vb span") };
+  },
+  morph(t) { return prog(t, 1.1, 2.1) * (1 - prog(t, 4.3, 5.2)); },
+  cam() { return HOME; },
+  cursor() { return null; },
+  render(t, c) {
+    const p = this.morph(t), w = lerp(1080, 372, p), h = lerp(600, 660, p);
+    Object.assign(c.win.style, { width: w + "px", height: h + "px", left: (W - w) / 2 + "px", top: (H - h) / 2 + "px", borderRadius: lerp(14, 26, p) + "px" });
+    c.wide.style.opacity = 1 - clamp(p * 1.6);
+    c.tall.style.opacity = clamp(p * 1.6 - 0.6);
+    const hs = [38, 52, 45, 60, 58, 72, 80, 96];
+    c.bars.forEach((s, i) => { const g = prog(t, 0.2 + (i % 8) * 0.08, 0.8 + (i % 8) * 0.08); s.style.height = hs[i % 8] * g + "%"; });
+  },
+  ratio(t) { return this.morph(t) > 0.5 ? "9:16" : "16:9"; },
+};
+
+/* 7. Smooth cursor */
+S["effect-cursor"] = {
+  dur: 5, poster: 2.5,
+  setup(world) {
+    const b = makeWindow(world, { url: "acme.app/canvas" });
+    b.innerHTML = `<div style="height:56px;border-bottom:1px solid var(--hair);display:flex;align-items:center;gap:8px;padding:0 18px">
+        ${["▢", "○", "T", "✎", "⌗"].map((g, i) => `<div class="tool" style="width:38px;height:38px;border-radius:9px;display:grid;place-items:center;font-size:17px;${i === 0 ? "background:#f3f0ea" : ""}">${g}</div>`).join("")}
+        <button class="btn" id="share" style="margin-left:auto;padding:9px 16px">Share</button></div>
+      <div style="position:absolute;left:0;right:220px;top:56px;bottom:0;background:#faf8f5;background-image:radial-gradient(#e4ded3 1px,transparent 1px);background-size:22px 22px">
+        <div id="shape" style="position:absolute;left:300px;top:150px;width:220px;height:150px;border-radius:16px;background:#d6d1c8"></div></div>
+      <div style="position:absolute;right:0;top:56px;bottom:0;width:220px;border-left:1px solid var(--hair);padding:20px"><b style="font-size:13px">Fill</b>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px">${["#d6d1c8", "#ff6a3d", "#3b82f6", "#16a34a", "#a855f7", "#eab308", "#171512", "#0ea5e9"].map((c) => `<div class="sw" style="height:34px;border-radius:8px;background:${c}"></div>`).join("")}</div></div>`;
+    const tool = R($$(".tool")[1]), shape = R($("#shape")), sw = R($$(".sw")[1]), share = R($("#share"));
+    const pts = [[640, 560], [tool.x, tool.y], [shape.x, shape.y], [sw.x, sw.y], [share.x, share.y], [640, 560]];
+    const ts = [0.2, 1.0, 1.9, 2.8, 3.7, 4.7];
+    this.curKeys = pts.map((p, i) => [ts[i], p]);
+    this.clicks = [1, 2, 3, 4].map((i) => ({ t: ts[i] + 0.05, x: pts[i][0], y: pts[i][1] }));
+    // a jittery "raw" mouse path: wobble, noise and an overshoot at each target
+    const rnd = seeded(7), raw = [];
+    for (let k = 0; k < pts.length - 1; k++) {
+      const [ax, ay] = pts[k], [bx, by] = pts[k + 1], dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L, bulge = (rnd() - 0.5) * 120;
+      for (let j = 0; j <= 26; j++) {
+        const u = j / 26, ov = Math.sin(clamp((u - 0.8) / 0.2) * Math.PI) * 18;
+        raw.push({ t: lerp(ts[k], ts[k + 1], u), x: ax + dx * u + nx * (Math.sin(u * Math.PI) * bulge + (rnd() - 0.5) * 16) + (dx / L) * ov, y: ay + dy * u + ny * (Math.sin(u * Math.PI) * bulge + (rnd() - 0.5) * 16) + (dy / L) * ov });
+      }
+    }
+    this.raw = raw;
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", W); svg.setAttribute("height", H);
+    Object.assign(svg.style, { position: "absolute", left: 0, top: 0, zIndex: 30 });
+    svg.innerHTML = `<polyline fill="none" stroke="#9a8f80" stroke-width="2" stroke-dasharray="4 5" stroke-linejoin="round" opacity=".75"/>`;
+    $("#fx").appendChild(svg);
+    const ghosts = [1, 2, 3, 4, 5].map((k) => { const g = $("#cursor").cloneNode(true); g.removeAttribute("id"); g.setAttribute("class", "trail"); g.style.opacity = 0.16 - k * 0.025; $("#fx").appendChild(g); return g; });
+    return { line: svg.querySelector("polyline"), ghosts, shape: $("#shape"), tools: $$(".tool") };
+  },
+  cam() { return HOME; },
+  cursor(t) { return track(t, this.curKeys); },
+  render(t, c) {
+    const vis = this.raw.filter((p) => p.t <= t && p.t > t - 1.6);
+    c.line.setAttribute("points", vis.map((p) => `${p.x},${p.y}`).join(" "));
+    c.ghosts.forEach((g, k) => { const [x, y] = this.cursor(t - (k + 1) * 0.022); g.style.transform = `translate(${x}px,${y}px)`; });
+    c.tools.forEach((el, i) => (el.style.background = (t > 1.05 && t < 4.8 ? i === 1 : i === 0) ? "#f3f0ea" : "transparent"));
+    c.shape.style.borderRadius = t > 1.05 && t < 4.8 ? "50%" : "16px";
+    c.shape.style.outline = t > 1.95 && t < 4.8 ? "2px solid #3b82f6" : "none";
+    c.shape.style.outlineOffset = "4px";
+    c.shape.style.background = t > 2.85 && t < 4.8 ? "#ff6a3d" : "#d6d1c8";
+  },
+  legend: true,
+};
+
+/* 8. Dead-air cuts */
+S["effect-deadair"] = {
+  dur: 6, poster: 3.8,
+  segs: [["Action", 1, 1.5], ["Loading", 2, 1.5], ["Dead air", 5, 2], ["Action", 1, 1]],   // [name, speed, clip seconds]
+  rec(t) { let rt = 0, c = 0; for (const [, s, d] of this.segs) { const u = clamp(t - c, 0, d); rt += u * s; c += d; } return rt; },
+  seg(t) { let c = 0; for (const s of this.segs) { if (t < c + s[2]) return s; c += s[2]; } return this.segs[3]; },
+  setup(world, hud) {
+    const b = makeWindow(world, { x: 160, y: 24, w: 960, h: 520, url: "acme.app/reports" });
+    b.innerHTML = side(["Overview", "Reports", "Settings"], 1) + `<div class="main"><div class="head"><div><h1>Weekly report</h1><p class="sub">Every Monday, built from your warehouse.</p></div><button class="btn" id="gen">Generate</button></div>
+      <div id="wait" style="margin-top:60px;text-align:center"><div style="display:inline-flex;gap:10px;align-items:center;font-weight:600"><span class="spin dark" id="sp" style="width:18px;height:18px"></span><span id="wl">Querying warehouse…</span></div>
+        <div class="mono sub" id="clock" style="margin-top:10px;font-size:15px">0:00</div><div class="prog" style="width:360px;margin:18px auto 0"><div id="wbar"></div></div></div>
+      <div id="res" style="position:absolute;left:36px;right:36px;top:120px"><div class="card" style="position:relative;height:300px"><b>Revenue · last 8 weeks</b><div class="bars" style="height:220px;margin-top:20px">${[40, 55, 48, 66, 62, 74, 83, 97].map((h) => `<span style="height:${h}%"></span>`).join("")}</div></div></div></div>`;
+    const gen = R($("#gen"));
+    this.clicks = [{ t: 0.9, x: gen.x, y: gen.y }];
+    this.curKeys = [[0, [700, 470]], [0.8, [gen.x - 4, gen.y + 2]], [1.2, [gen.x - 4, gen.y + 2]], [1.7, [gen.x - 60, gen.y + 140]], [6, [gen.x - 60, gen.y + 140]]];
+    const total = this.segs.reduce((a, s) => a + s[1] * s[2], 0), cols = ["#171512", "#f2a33a", "#c9c2b6", "#171512"];
+    const row = (lab, key, sum) => `<div style="display:flex;align-items:center;gap:14px;margin-top:10px"><span class="mono" style="width:110px;font-size:12.5px;color:var(--soft)">${lab}</span>
+      <div style="position:relative;flex:1;height:28px;display:flex;gap:3px">${this.segs.map((s, i) => `<div style="flex:${key(s)};background:${cols[i]};border-radius:6px;color:${i === 2 ? "#171512" : "#fff"};font:500 11.5px 'IBM Plex Mono',monospace;display:flex;align-items:center;padding:0 9px;white-space:nowrap;overflow:hidden">${s[0]} ${s[1]}x</div>`).join("")}
+      <div class="ph" style="position:absolute;top:-5px;bottom:-5px;width:3px;border-radius:2px;background:var(--orange);box-shadow:0 0 0 2px #fff"></div></div><span class="mono" style="width:44px;font-size:12.5px">${sum}</span></div>`;
+    hud.innerHTML = `<div style="position:absolute;left:160px;width:960px;top:570px;background:rgba(255,255,255,.75);border-radius:14px;padding:6px 18px 16px;box-shadow:0 10px 30px -14px rgba(0,0,0,.25)">
+      ${row("recording", (s) => s[1] * s[2], "0:" + String(Math.round(total)).padStart(2, "0"))}${row("clip", (s) => s[2], "0:06")}</div>`;
+    this.total = total;
+    return { ph: $$(".ph", hud), gen: $("#gen"), wait: $("#wait"), res: $("#res"), clock: $("#clock"), wbar: $("#wbar"), sp: $("#sp"), wl: $("#wl") };
+  },
+  cam() { return HOME; },
+  cursor(t) { return track(t, this.curKeys); },
+  render(t, c) {
+    const rt = this.rec(t);
+    c.ph[0].style.left = `calc(${(rt / this.total) * 100}% - 1px)`;
+    c.ph[1].style.left = `calc(${(t / this.dur) * 100}% - 1px)`;
+    const waiting = t > 0.95 && t < 5.05;
+    c.wait.style.opacity = waiting ? 1 : 0;
+    c.res.style.opacity = prog(t, 5.05, 5.35);
+    c.res.style.transform = `translateY(${(1 - prog(t, 5.05, 5.35)) * 12}px)`;
+    const sec = Math.max(0, rt - 1.4);
+    c.clock.textContent = `0:${String(Math.floor(sec)).padStart(2, "0")} elapsed`;
+    c.sp.style.transform = `rotate(${rt * 400}deg)`;
+    c.wl.textContent = t < 3 ? "Querying warehouse…" : "Waiting on the export job…";
+    c.wbar.style.width = clamp((rt - 1.4) / 13) * 100 + "%";
+    c.gen.style.opacity = waiting ? 0.55 : 1;
+  },
+  speed(t) { const s = this.seg(t); return s[1] > 1 ? [s[1] + "x", 1] : null; },
+};
+
+/* 9. Looks */
+S["effect-looks"] = {
+  dur: 5.6, poster: 0.7,
+  looks: [
+    { name: "minimal", scale: 0.96, shadow: 0.12, radius: 10, box: 0 },
+    { name: "saas", scale: 0.9, shadow: 0.38, radius: 14, box: 0 },
+    { name: "cinematic", scale: 0.84, shadow: 0.7, radius: 12, box: 1 },
+    { name: "apple", scale: 0.88, shadow: 0.22, radius: 22, box: 0 },
+  ],
+  setup(world, hud) {
+    $("#bg").innerHTML = `<div style="background:#efeeea"></div><div class="warm"></div>
+      <div style="background:radial-gradient(60% 70% at 50% 45%, #4a2414 0%, #120d0b 70%)"></div>
+      <div style="background:radial-gradient(40% 50% at 20% 25%, #ffd9e8 0%, transparent 70%),radial-gradient(45% 55% at 85% 80%, #d6e6ff 0%, transparent 70%),radial-gradient(35% 45% at 80% 15%, #fff1c9 0%, transparent 70%),#fbfbfd"></div>`;
+    const b = makeWindow(world, { url: "acme.app/leads" });
+    b.innerHTML = side(["Overview", "Leads", "Reports", "Settings"], 1) + `<div class="main"><div class="head"><div><h1>Leads</h1><p class="sub">Companies that match your ideal customer.</p></div><button class="btn">Find leads</button></div>
+      <div style="margin-top:18px">${[["N", "Northwind", "#ff6a3d", 92], ["L", "Lumen Pay", "#3b82f6", 88], ["H", "Harbor", "#16a34a", 81], ["K", "Kite Ledger", "#a855f7", 77], ["T", "Tallyhub", "#eab308", 74]].map(([a, n, c, s]) => `<div class="row"><div class="av" style="background:${c}">${a}</div><div><div class="nm">${n}</div><div class="mt">Fintech</div></div><span class="score">${s} fit</span></div>`).join("")}</div></div>`;
+    hud.innerHTML = `<div class="lb" style="position:absolute;left:0;right:0;top:0;height:56px;background:#000"></div><div class="lb" style="position:absolute;left:0;right:0;bottom:0;height:56px;background:#000"></div>`;
+    return { win: $(".win"), layers: $$("#bg > div"), lb: $$(".lb", hud) };
+  },
+  weights(t) {
+    const seg = 1.4, i = Math.floor(t / seg) % 4, p = prog(t, (Math.floor(t / seg) + 1) * seg - 0.35, (Math.floor(t / seg) + 1) * seg);
+    const w = [0, 0, 0, 0]; w[i] += 1 - p; w[(i + 1) % 4] += p; return w;
+  },
+  mix(t, k) { return this.weights(t).reduce((a, w, i) => a + w * this.looks[i][k], 0); },
+  cam(t) { return [1 + 0.02 * Math.sin(t * 1.1), 640, 360]; },
+  cursor() { return null; },
+  render(t, c) {
+    const w = this.weights(t);
+    c.layers.forEach((l, i) => (l.style.opacity = w[i]));
+    Object.assign(c.win.style, { transform: `scale(${this.mix(t, "scale")})`, borderRadius: this.mix(t, "radius") + "px", boxShadow: `0 40px 100px -30px rgba(20,10,5,${this.mix(t, "shadow")}), 0 0 0 1px rgba(23,21,18,.07)` });
+    c.lb.forEach((l) => (l.style.opacity = this.mix(t, "box")));
+  },
+  label(t) { const w = this.weights(t); const i = w.indexOf(Math.max(...w)); return ["--style " + this.looks[i].name, 1 - 2 * Math.min(...w.filter((x) => x > 0))]; },
+};
+
+/* 10. Captions */
+S["effect-captions"] = {
+  dur: 5.6, poster: 2.9,
+  lines: [{ a: 0.1, b: 1.65, w: [["Pick", 0.2], ["a", 0.45], ["PDF,", 0.6], ["hit", 0.95], ["Convert.", 1.15]] },
+          { a: 1.75, b: 3.95, w: [["Acme", 1.85], ["turns", 2.15], ["it", 2.4], ["into", 2.55], ["clean", 2.85], ["markdown", 3.15]] },
+          { a: 4.05, b: 5.45, w: [["in", 4.15], ["about", 4.3], ["two", 4.6], ["seconds.", 4.85]] }],
+  setup(world, hud) {
+    const b = makeWindow(world, { y: 36, h: 540, url: "acme.app/convert" });
+    b.innerHTML = `<div style="display:flex;height:100%">
+      <div style="flex:1;padding:28px 34px;border-right:1px solid var(--hair);background:#faf8f5"><div style="display:flex;align-items:center;gap:10px"><span style="width:26px;height:30px;border-radius:5px;background:#e5484d;color:#fff;font:700 9px sans-serif;display:grid;place-items:center">PDF</span><b>q3-report.pdf</b><button class="btn" id="cv" style="margin-left:auto;padding:9px 16px">Convert</button></div>
+        <div style="margin-top:22px;background:#fff;border:1px solid var(--hair);border-radius:10px;padding:26px;height:380px">${[90, 70, 84, 60, 0, 88, 76, 92, 50, 0, 80, 66].map((w) => (w ? `<div class="line" style="width:${w}%"></div>` : `<div style="height:14px"></div>`)).join("")}</div></div>
+      <div style="flex:1;padding:28px 34px"><b class="mono" style="font-size:13px;color:var(--soft)">q3-report.md</b><div id="md" class="mono" style="margin-top:22px;font-size:14px;line-height:1.85"></div></div></div>`;
+    const cv = R($("#cv"));
+    this.clicks = [{ t: 1.75, x: cv.x, y: cv.y }];
+    this.curKeys = [[0, [560, 470]], [0.4, [560, 470]], [1.6, [cv.x - 4, cv.y + 2]], [2.1, [cv.x - 4, cv.y + 2]], [2.8, [cv.x - 60, cv.y + 200]], [5.6, [560, 470]]];
+    hud.innerHTML = `<div id="cap" style="position:absolute;left:50%;bottom:44px;transform:translateX(-50%);background:rgba(23,21,18,.86);color:#fff;padding:12px 22px;border-radius:12px;font:600 28px 'Public Sans',sans-serif;letter-spacing:-.01em;white-space:nowrap"></div>`;
+    return { md: $("#md"), cap: $("#cap") };
+  },
+  cam(t) { return track(t, [[0, HOME], [1.9, HOME], [2.6, [1.35, 900, 300]], [4.4, [1.35, 900, 300]], [5.2, HOME]]); },
+  cursor(t) { return track(t, this.curKeys); },
+  render(t, c) {
+    const md = ["# Q3 report", "", "## Revenue", "- MRR **$412k** (+18%)", "- Net retention 114%", "", "## Churn", "| plan | rate |", "|------|------|"];
+    const n = Math.floor(md.length * prog(t, 1.9, 3.7, (x) => x));
+    c.md.innerHTML = md.slice(0, t > 5.3 ? 0 : n).map((l) => (l ? l.replace(/^(#+ .*)$/, "<b style='color:var(--orange)'>$1</b>") : "&nbsp;")).join("<br/>");
+    const line = this.lines.find((l) => t >= l.a && t < l.b);
+    c.cap.style.opacity = line ? fade(t, line.a, line.a + 0.12, line.b - 0.12, line.b) : 0;
+    if (line) c.cap.innerHTML = line.w.map(([w, at]) => `<span style="opacity:${t >= at ? 1 : 0.35};${t >= at && t < at + 0.3 ? "color:#ffb199" : ""}">${w}</span>`).join(" ");
+  },
+};
+
+/* 11. Keystrokes */
+S["effect-keys"] = {
+  dur: 5.2, poster: 1.85,
+  cmds: ["Invite teammate", "Invoices", "New project", "Settings", "Switch theme"],
+  setup(world, hud) {
+    const b = makeWindow(world, { url: "acme.app/projects" });
+    b.innerHTML = side(["Projects", "Team", "Billing", "Settings"], 0) + `<div class="main"><h1>Projects</h1><p class="sub">12 active</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px">${["Website", "Mobile app", "Data pipeline", "Billing v2", "Onboarding", "Docs"].map((n) => `<div style="border:1px solid var(--hair);border-radius:12px;padding:16px;height:130px"><b>${n}</b><div class="line" style="margin-top:16px;width:80%"></div><div class="line" style="width:50%"></div></div>`).join("")}</div></div>
+      <div id="dim" style="position:absolute;inset:0;background:rgba(23,21,18,.28)"></div>
+      <div id="pal" style="position:absolute;left:50%;top:70px;width:520px;margin-left:-260px;background:#fff;border-radius:14px;box-shadow:0 30px 70px -20px rgba(0,0,0,.45);overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--hair);font-size:17px;display:flex;align-items:center;gap:10px"><span style="color:#b3ada3">⌕</span><span id="q"></span><span id="qc"></span><span id="qp" style="color:#b3ada3">Type a command…</span></div>
+        <div id="list" style="padding:8px"></div></div>
+      <div id="modal" style="position:absolute;left:50%;top:110px;width:460px;margin-left:-230px;background:#fff;border-radius:16px;box-shadow:0 30px 70px -20px rgba(0,0,0,.45);padding:26px">
+        <b style="font-size:19px">Invite teammate</b><p class="sub">They'll get an email with a link.</p>
+        <div style="margin-top:18px;border:1.5px solid var(--orange);border-radius:10px;padding:12px 14px;font-size:15px;color:#b3ada3">name@company.com</div>
+        <button class="btn" style="margin-top:16px">Send invite</button></div>`;
+    hud.innerHTML = `<div id="keys" style="position:absolute;left:0;right:0;bottom:40px;text-align:center"></div>`;
+    const pal = R($("#pal"));
+    this.palY = pal.t + 120;
+    return { dim: $("#dim"), pal: $("#pal"), q: $("#q"), qc: $("#qc"), qp: $("#qp"), list: $("#list"), modal: $("#modal"), keys: $("#keys") };
+  },
+  cam(t) { return track(t, [[0, HOME], [0.85, HOME], [1.35, [1.4, 640, this.palY]], [4.2, [1.4, 640, this.palY]], [4.9, HOME]]); },
+  cursor() { return null; },
+  render(t, c) {
+    const open = prog(t, 0.85, 1.05) * (1 - prog(t, 2.75, 2.9));
+    c.pal.style.opacity = open; c.pal.style.transform = `scale(${0.96 + 0.04 * open})`;
+    const modal = prog(t, 2.9, 3.15) * (1 - prog(t, 4.6, 4.9));
+    c.modal.style.opacity = modal; c.modal.style.transform = `translateY(${(1 - modal) * 10}px)`;
+    c.dim.style.opacity = Math.max(open, modal);
+    const q = t > 2.9 ? "" : t >= 2.05 ? "inv" : t >= 1.85 ? "in" : t >= 1.65 ? "i" : "";
+    c.q.textContent = q; c.qp.style.display = q ? "none" : "inline"; c.qc.innerHTML = caret(Math.floor(t * 2.5) % 2 === 0 || (t > 1.6 && t < 2.2));
+    const hits = this.cmds.filter((n) => n.toLowerCase().includes(q));
+    c.list.innerHTML = hits.map((n, i) => `<div style="padding:11px 14px;border-radius:9px;font-size:15px;${i === 0 ? "background:#fff1eb;color:#c2441c;font-weight:600" : ""}">${n}</div>`).join("");
+    const keys = [[["⌘", "K"], 0.55, 1.5], [["I"], 1.65, 1.85], [["N"], 1.85, 2.05], [["V"], 2.05, 2.45], [["↵"], 2.65, 3.3]];
+    const k = keys.find(([, a, b]) => t >= a && t < b);
+    c.keys.innerHTML = k ? k[0].map((x, i) => `<span class="key" style="opacity:${k[0].length > 1 && i === 1 ? prog(t, 0.75, 0.8) : 1}">${x}</span>`).join("") : "";
+    c.keys.style.transform = k ? `translateY(${(1 - prog(t, k[1], k[1] + 0.08)) * 8}px)` : "";
+  },
+};
+
+/* 12. Privacy blur */
+S["effect-blur"] = {
+  dur: 5, poster: 3.0,
+  setup(world) {
+    const b = makeWindow(world, { url: "acme.app/settings" });
+    const rows = [["Name", "Dana Whitfield", false], ["Email", "dana.whitfield@northwind.io", true], ["API key", "sk_live_a8F2kQ9xP3mZ7vW1tR4", true], ["Card", "Visa •••• 4242 · exp 09/29", true], ["Plan", "Team · 12 seats", false]];
+    b.innerHTML = side(["Profile", "API", "Billing", "Team"], 1) + `<div class="main"><h1>Account</h1><p class="sub">Manage your details and keys.</p>
+      <div id="scan" style="position:absolute;left:196px;right:0;height:3px;background:var(--orange);box-shadow:0 0 18px 4px rgba(255,106,61,.45)"></div>
+      <div style="margin-top:22px">${rows.map(([k, v, s]) => `<div class="row fld" data-s="${s ? 1 : 0}" style="padding:16px 4px"><span style="width:110px;font-size:13.5px;color:var(--soft)">${k}</span><span class="v mono" style="font-size:15px;position:relative">${v}<span class="tagx" style="position:absolute;left:0;top:50%;transform:translateY(-50%);font:600 11px 'Public Sans',sans-serif;background:var(--ink);color:#fff;padding:3px 8px;border-radius:6px;white-space:nowrap">● hidden</span></span>${k === "API key" ? `<button class="btn ghost" id="copy" style="margin-left:auto;padding:7px 14px;font-size:13px">Copy</button>` : ""}</div>`).join("")}</div></div>`;
+    const flds = $$(".fld"), key = R(flds[2]), copy = R($("#copy")), top = R(b).t;
+    this.clicks = [{ t: 3.25, x: copy.x, y: copy.y }];
+    this.camKeys = [[0, HOME], [1.9, HOME], [2.65, [1.85, key.x + 60, key.y]], [3.85, [1.85, key.x + 60, key.y]], [4.6, HOME]];
+    this.curKeys = [[0, [700, 640]], [2.4, [700, 640]], [3.15, [copy.x - 4, copy.y + 2]], [3.6, [copy.x - 4, copy.y + 2]], [4.6, [700, 640]]];
+    this.top = top; this.ys = flds.map((f) => R(f).y);
+    return { flds, scan: $("#scan"), copy: $("#copy") };
+  },
+  scanY(t) { return lerp(this.top + 70, this.top + 520, prog(t, 0.5, 1.6, (x) => x)); },
+  cam(t) { return track(t, this.camKeys); },
+  cursor(t) { return track(t, this.curKeys); },
+  render(t, c) {
+    const sy = this.scanY(t);
+    c.scan.style.top = sy - this.top + "px";
+    c.scan.style.opacity = t > 0.45 && t < 1.65 ? 1 : 0;
+    c.flds.forEach((f, i) => {
+      const on = f.dataset.s === "1", hit = on && sy >= this.ys[i];
+      const tHit = 0.5 + 1.1 * clamp((this.ys[i] - this.top - 70) / 450);
+      const p = hit ? prog(t, tHit, tHit + 0.25) : 0;
+      const v = $(".v", f);
+      v.style.color = p ? `rgba(23,21,18,${1 - p})` : "";
+      v.style.textShadow = p ? `0 0 ${10 * p}px rgba(23,21,18,${0.75 * p})` : "";
+      $(".tagx", v).style.opacity = p;
+      f.style.background = on && t > tHit && t < tHit + 0.35 ? "#fff6f2" : "transparent";
+    });
+    c.copy.textContent = t > 3.25 && t < 4.4 ? "Copied ✓" : "Copy";
+  },
+};
+
+/* 13. Push a feature, get the launch video */
+S["launch-push"] = {
+  dur: 6.4, poster: 4.3,
+  cmd: "git push origin feat/invite-teammates",
+  log: [[1.55, "<span style='color:#8a847a'>To github.com:acme/app.git</span>"], [1.7, "<span style='color:#8a847a'>   4f1c2e0..a81b9d3  feat/invite-teammates</span>"],
+        [2.05, "<span style='color:#ff6a3d'>clep</span>  new feature: <b>invite-teammates</b>"], [2.4, "<span style='color:#ff6a3d'>clep</span>  recording 3 states on preview…"],
+        [3.35, "<span style='color:#4ade80'>clep  ✓ launch video ready</span>  0:12 · 16:9 + 9:16"]],
+  setup(world) {
+    const term = document.createElement("div");
+    term.className = "win";
+    Object.assign(term.style, { left: "56px", top: "130px", width: "560px", height: "420px", background: "#171512" });
+    term.innerHTML = `<div class="bar" style="background:#221f1b;border-color:#2e2a25"><i></i><i></i><i></i><span class="url" style="background:#171512;border-color:#2e2a25;color:#8a847a">~/acme · zsh</span></div>
+      <div class="mono" id="tl" style="position:absolute;top:58px;left:24px;right:20px;color:#f6efdf;font-size:14px;line-height:1.9"></div>`;
+    world.appendChild(term);
+    const card = document.createElement("div");
+    card.className = "win";
+    Object.assign(card.style, { left: "660px", top: "130px", width: "564px", height: "420px" });
+    card.innerHTML = `<div style="padding:18px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--hair)"><b style="font-size:15px" id="ct">Launch video</b><span id="cs" class="mono" style="margin-left:auto;font-size:12px;color:var(--soft)">waiting for a push</span></div>
+      <div id="screen" style="position:absolute;left:20px;right:20px;top:70px;height:271px;border-radius:10px;overflow:hidden;background:#efe5cf">
+        <div id="idle" style="position:absolute;inset:0;display:grid;place-items:center;color:#b3a993;font-size:13px" class="mono">no new features yet</div>
+        <div id="rend" style="position:absolute;inset:0;display:grid;place-items:center"><div style="width:300px;text-align:center"><div class="mono" style="font-size:12.5px;color:var(--soft)" id="rl">rendering…</div><div class="prog" style="margin-top:12px;background:#e2d8c2"><div id="rb"></div></div></div></div>
+        <div id="vid" class="warm" style="position:absolute;inset:0">
+          <div id="mini" style="position:absolute;left:50%;top:50%;width:400px;height:220px;margin:-110px 0 0 -200px;transform-origin:0 0">
+            <div style="position:absolute;inset:0;background:#fff;border-radius:9px;box-shadow:0 16px 40px -14px rgba(80,40,10,.4);overflow:hidden">
+              <div style="height:20px;background:#f8f6f2;border-bottom:1px solid var(--hair);display:flex;gap:4px;align-items:center;padding:0 8px"><i style="width:6px;height:6px;border-radius:50%;background:#ff5f57"></i><i style="width:6px;height:6px;border-radius:50%;background:#febc2e"></i><i style="width:6px;height:6px;border-radius:50%;background:#28c840"></i></div>
+              <div style="position:absolute;left:50%;top:38px;width:230px;margin-left:-115px;border:1px solid var(--hair);border-radius:10px;padding:14px;box-shadow:0 10px 30px -14px rgba(0,0,0,.3)"><b style="font-size:13px">Invite teammate</b>
+                <div style="margin-top:10px;border:1px solid var(--orange);border-radius:7px;padding:7px 9px;font-size:11px" id="em"></div>
+                <div class="btn" id="sb" style="margin-top:10px;padding:6px 11px;font-size:11px;border-radius:7px">Send invite</div></div>
+              <div id="toast" style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:11px;padding:6px 12px;border-radius:7px;white-space:nowrap">✓ Invite sent to sam@acme.co</div></div>
+            <svg id="mc" viewBox="0 0 26 34" style="position:absolute;left:0;top:0;width:15px;height:20px"><path d="M3 2 L3 26 L9.5 20 L14 30.5 L18.2 28.6 L13.8 18.6 L22.5 18.6 Z" fill="#171512" stroke="#fff" stroke-width="2.2"/></svg></div>
+          <div style="position:absolute;left:12px;right:12px;bottom:10px;height:4px;border-radius:2px;background:rgba(23,21,18,.15)"><div id="pp" style="height:100%;border-radius:2px;background:var(--ink)"></div></div></div></div>
+      <div style="position:absolute;left:20px;right:20px;bottom:20px;display:flex;gap:8px" id="acts"><span class="btn dark" style="padding:9px 14px;font-size:13px">Post to X</span><span class="btn ghost" style="padding:9px 14px;font-size:13px">Copy link</span><span class="btn ghost" style="padding:9px 14px;font-size:13px">9:16 ↓</span></div>`;
+    world.appendChild(card);
+    return { tl: $("#tl"), cs: $("#cs"), ct: $("#ct"), idle: $("#idle"), rend: $("#rend"), rb: $("#rb"), rl: $("#rl"), vid: $("#vid"), mini: $("#mini"), mc: $("#mc"), em: $("#em"), sb: $("#sb"), toast: $("#toast"), pp: $("#pp"), acts: $("#acts") };
+  },
+  cam(t) { return track(t, [[0, HOME], [0.2, [1.25, 380, 330]], [1.9, [1.25, 380, 330]], [2.5, HOME], [3.3, HOME], [3.9, [1.4, 942, 330]], [5.6, [1.4, 942, 330]], [6.2, HOME]]); },
+  cursor() { return null; },
+  render(t, c) {
+    const live = t < 6.05;
+    let html = `<span style="color:#4ade80">➜</span> <span style="color:#8a847a">acme</span> ${live ? typed(this.cmd, t, 0.35, 1.3) : ""}${caret(t < 1.45 && Math.floor(t * 2.5) % 2 === 0 || (t > 0.35 && t < 1.3))}`;
+    for (const [at, l] of this.log) if (t >= at && live) html += `<br/>${l}`;
+    c.tl.innerHTML = html;
+    const rendering = t >= 2.4 && t < 3.35, ready = t >= 3.35 && live;
+    c.idle.style.opacity = t < 2.4 || !live ? 1 : 0;
+    c.rend.style.opacity = rendering ? 1 : 0;
+    c.rb.style.width = prog(t, 2.4, 3.3, (x) => x) * 100 + "%";
+    c.rl.textContent = t < 2.85 ? "recording preview deploy…" : "editing · zooms · cursor…";
+    c.vid.style.opacity = ready ? prog(t, 3.35, 3.55) : 0;
+    c.cs.innerHTML = ready ? "<span style='color:var(--green)'>● ready in 1.3s</span>" : rendering ? "<span style='color:var(--orange)'>● rendering</span>" : "waiting for a push";
+    c.ct.textContent = t >= 2.05 && live ? "invite-teammates.mp4" : "Launch video";
+    c.acts.style.opacity = ready ? prog(t, 3.5, 3.75) : 0.35;
+    // the clip itself playing inside the card
+    const vt = t - 3.35, z = track(vt, [[0, 1], [0.5, 1.35], [1.9, 1.35], [2.5, 1]]);
+    c.mini.style.transform = `translate(${200 - 200 * z}px, ${110 - 120 * z}px) scale(${z})`;
+    c.em.textContent = typed("sam@acme.co", vt, 0.4, 1.1) || "name@company.com";
+    c.em.style.color = vt > 0.4 ? "var(--ink)" : "#b3ada3";
+    const [mx, my] = track(vt, [[0, [330, 190]], [1.1, [330, 190]], [1.5, [205, 112]], [2.6, [205, 112]], [3, [330, 190]]]);
+    c.mc.style.transform = `translate(${mx}px,${my}px) scale(${vt > 1.5 && vt < 1.62 ? 0.8 : 1})`;
+    c.sb.style.transform = `scale(${vt > 1.5 && vt < 1.62 ? 0.93 : 1})`;
+    c.toast.style.opacity = prog(vt, 1.65, 1.85);
+    c.pp.style.width = clamp(vt / 3) * 100 + "%";
+  },
+};
+
+// ---------- engine ----------
+const name = new URLSearchParams(location.search).get("scene");
+const scene = S[name];
+let ctx;
+const view = (c) => { const [s, fx, fy] = c; const hw = W / 2 / s, hh = H / 2 / s; return [s, clamp(fx, hw, W - hw), clamp(fy, hh, H - hh)]; };
+
+function renderAt(t) {
+  t = Math.min(t, scene.dur - 1e-6);
+  scene.render(t, ctx);
+  const [s, fx, fy] = view(scene.cam(t));
+  const [s0, fx0, fy0] = view(scene.cam(Math.max(0, t - 1 / 30)));
+  const v = Math.hypot((fx - fx0) * s, (fy - fy0) * s) + Math.abs(s - s0) * 900;
+  const cam = $("#cam");
+  cam.style.transform = `translate(${W / 2}px,${H / 2}px) scale(${s}) translate(${-fx}px,${-fy}px)`;
+  cam.style.filter = v > 10 ? `blur(${Math.min(0.8, (v - 10) * 0.03)}px)` : "none";   // motion blur on fast moves
+
+  const cur = $("#cursor"), p = scene.cursor(t);
+  cur.style.display = p ? "block" : "none";
+  if (p) {
+    const down = (scene.clicks || []).some((k) => t >= k.t - 0.05 && t < k.t + 0.12);
+    cur.style.transform = `translate(${p[0]}px,${p[1]}px) scale(${(down ? 0.82 : 1) / Math.sqrt(s)})`;
+  }
+  $$(".ripple").forEach((r) => r.remove());
+  for (const k of scene.clicks || []) {
+    const u = (t - k.t) / 0.55;
+    if (u < 0 || u > 1) continue;
+    const r = document.createElement("div");
+    r.className = "ripple";
+    Object.assign(r.style, { left: k.x + "px", top: k.y + "px", transform: `scale(${0.3 + out(u) * 1.1})`, opacity: 1 - u });
+    $("#fx").appendChild(r);
+  }
+
+  // hud chips
+  let hud = "";
+  const sp = scene.speed && scene.speed(t);
+  if (sp) hud += `<div class="pill" style="right:28px;top:22px;opacity:${sp[1]}"><em>▶▶</em> ${sp[0]}</div>`;
+  const tag = scene.tag && scene.tag(t);
+  if (tag) hud += `<div class="pill" style="left:28px;top:22px;opacity:${tag[1]}"><em>§</em> ${tag[0]}</div>`;
+  if (scene.ratio) hud += `<div class="pill" style="right:28px;top:22px">${scene.ratio(t)}</div>`;
+  if (scene.label) { const [l, o] = scene.label(t); hud += `<div class="pill" style="left:50%;bottom:20px;transform:translateX(-50%);opacity:${o}">${l}</div>`; }
+  if (scene.legend) hud += `<div class="pill" style="left:28px;bottom:22px;background:rgba(255,255,255,.88);color:var(--ink)"><span style="color:#9a8f80">- - -</span> your mouse &nbsp; <em>━━</em> Clep's cursor</div>`;
+  let chips = $("#chips");
+  if (!chips) { chips = document.createElement("div"); chips.id = "chips"; $("#hud").appendChild(chips); }
+  chips.innerHTML = hud;
+}
+
+(async () => {
+  ctx = scene.setup($("#world"), $("#hud"));
+  if (!$("#bg").children.length) $("#bg").className = "warm";
+  await document.fonts.ready;
+  renderAt(0);
+  window.DUR = scene.dur; window.POSTER = scene.poster; window.READY = true;
+})();
+</script>
+</body>
+</html>
