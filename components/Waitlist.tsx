@@ -4,7 +4,7 @@ import { useState } from "react";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function Waitlist({ id }: { id?: string }) {
+export default function Waitlist({ id, cta = "Reserve Your Spot" }: { id?: string; cta?: string }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -48,22 +48,22 @@ export default function Waitlist({ id }: { id?: string }) {
           aria-label="Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Your name"
+          placeholder="Your Name*"
           autoComplete="name"
         />
         <input
           aria-label="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@company.com"
+          placeholder="Email Address*"
           autoComplete="email"
           inputMode="email"
         />
-        <button type="submit" disabled={busy}>
-          {busy ? "Joining…" : "Join waitlist"}
-        </button>
       </div>
       {error && <p className="waitlist-error" role="alert">{error}</p>}
+      <button type="submit" disabled={busy}>
+        {busy ? "Reserving…" : cta}
+      </button>
     </form>
   );
 }

@@ -1,7 +1,8 @@
 import "./landing.css";
 import HeroFilm from "../components/HeroFilm";
 import InViewVideo from "../components/InViewVideo";
-import ClepLogo from "../components/Logo";
+import PixelGrid from "../components/PixelGrid";
+import StickyNav from "../components/StickyNav";
 import Waitlist from "../components/Waitlist";
 import { EFFECTS, LAUNCH_VIDEO, PACING, SKILL_URL } from "../lib/landing";
 
@@ -29,6 +30,12 @@ const RUN = [
   ["→", "recorded 11.0s at 2x · uploading 42 MB"],
   ["→", "editing · camera, cursor, pacing"],
   ["✓", "clip ready: clep/signup.mp4"],
+];
+
+const PLANS = [
+  { name: "Free", price: "$0", note: "To start. Every effect, every format." },
+  { name: "Pro", price: "$12", note: "For when you post more.", featured: true },
+  { name: "Studio", price: "$29", note: "For teams shipping every day." },
 ];
 
 const FAQ = [
@@ -61,26 +68,37 @@ const FAQ = [
 export default function Page() {
   return (
     <div className="home">
-      <header className="home-nav">
-        <a href="#top" aria-label="clep — home">
-          <ClepLogo height={24} />
+      <div className="hero-bg" aria-hidden>
+        <PixelGrid />
+      </div>
+
+      <StickyNav>
+        <a href="#top" aria-label="Clep home" className="home-logo">
+          <img src="/brand/clep-logo-cream.png" alt="Clep" width={110} height={43} />
         </a>
         <nav className="home-links">
           <a href="#work">Work</a>
-          <a href="#how">How it works</a>
-          <a href={SKILL_URL}>Docs</a>
+          <a href="#how">How It Works</a>
+          <a href="#pricing">Pricing</a>
         </nav>
         <div className="home-actions">
-          <a href="#waitlist" className="get-key">Join waitlist</a>
+          <a href="/login" className="btn-line">Login</a>
+          <a href="#waitlist" className="btn-pink">Join Waitlist</a>
         </div>
-      </header>
+      </StickyNav>
 
       <section id="top" className="intro">
-        <p className="kicker">For Claude Code, Cursor, Codex &amp; every agent</p>
+        <p className="works-with">
+          Works with
+          <span className="agents" aria-label="Claude Code, Cursor, Codex">
+            <AgentIcons />
+          </span>
+          &amp; Every Available Agent
+        </p>
         <h1 className="display">
-          Show your product
+          <span className="pink">Showcase</span> your
           <br />
-          <span className="ring">every<RingMark /></span> day.
+          Product <span className="pink">Every Day</span>
         </h1>
         <p className="intro-sub">
           Your agent records it, Clep cuts it.
@@ -88,20 +106,44 @@ export default function Page() {
           Walkthroughs, feature demos &amp; mockups.
         </p>
         <div className="give">
-          <p className="give-label">Clep is in private beta</p>
+          <h2 className="give-title">
+            Join <span>Private Beta</span>
+          </h2>
+          <p className="give-note">
+            Be the first to use Clep. Platform access
+            <br />
+            will be sent to you on the email below.
+          </p>
           <Waitlist id="waitlist" />
-          <p className="give-note">We&apos;re letting people in every week.</p>
         </div>
       </section>
 
+      <section className="explore">
+        <h2 className="display">
+          <span className="pink">Explore</span> Videos
+          <br />
+          Made using <span className="pink">Clep</span>
+        </h2>
+        <p className="explore-sub">
+          Explore <strong>Product Demos</strong>, <strong>Walkthroughs</strong>, and <strong>Feature Showcases</strong> created
+          with Clep. Watch how AI agents record products in action and Clep transforms those recordings into polished,
+          ready-to-share videos.
+        </p>
+        <a href="#waitlist" className="btn-soft">Create Video</a>
+      </section>
+
       <section className="stage">
-        <span className="stage-label left">Scroll for the cut</span>
+        <div className="stage-labels">
+          <a href="https://tst.abstraklabs.com" target="_blank" rel="noreferrer" className="stage-link">tst.abstraklabs.com</a>
+          <span className="stage-made">
+            Made with <img src="/brand/clep-logo-cream.png" alt="Clep" width={70} height={27} />
+          </span>
+        </div>
         <HeroFilm />
-        <span className="stage-label right">Made with Clep</span>
       </section>
 
       <section id="how" className="block">
-        <h2 className="block-title">Tell your agent what to film. It runs Clep.</h2>
+        <h2 className="block-title">Tell your agent what to film. <span className="pink">It runs Clep.</span></h2>
         <div className="how">
           <ol className="how-steps">
             {STEPS.map((step, i) => (
@@ -127,7 +169,7 @@ export default function Page() {
 
       <section className="block launch">
         <div className="block-head">
-          <h2 className="block-title">{LAUNCH_VIDEO.title}</h2>
+          <h2 className="block-title">Push a feature. <span className="pink">Get the launch video.</span></h2>
           <p className="block-note">{LAUNCH_VIDEO.line}</p>
         </div>
         <InViewVideo slug={LAUNCH_VIDEO.slug} className="tile-video launch-video" />
@@ -135,7 +177,7 @@ export default function Page() {
 
       <section id="work" className="block">
         <div className="block-head">
-          <h2 className="block-title">Clep picks the effect.</h2>
+          <h2 className="block-title">Clep <span className="pink">picks the effect.</span></h2>
           <p className="block-note">It reads the page and the recording, then decides what goes where.</p>
         </div>
         <div className="pacing" aria-label="How Clep paces a recording">
@@ -155,8 +197,25 @@ export default function Page() {
         </div>
       </section>
 
+      <section id="pricing" className="block">
+        <div className="block-head">
+          <h2 className="block-title">Simple <span className="pink">pricing.</span></h2>
+          <p className="block-note">Free while you try it. Upgrade when you post more.</p>
+        </div>
+        <div className="plans">
+          {PLANS.map((plan) => (
+            <div key={plan.name} className={plan.featured ? "plan featured" : "plan"}>
+              <h3>{plan.name}</h3>
+              <p className="plan-price">{plan.price}<span>/mo</span></p>
+              <p>{plan.note}</p>
+              <a href="#waitlist" className={plan.featured ? "btn-pink" : "btn-line"}>Join Waitlist</a>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="block questions">
-        <h2 className="block-title">Common questions.</h2>
+        <h2 className="block-title">Common <span className="pink">questions.</span></h2>
         {FAQ.map((item) => (
           <details key={item.q}>
             <summary>{item.q}</summary>
@@ -166,30 +225,47 @@ export default function Page() {
       </section>
 
       <section className="closer">
-        <h2 className="display small">
-          Ship it. <span className="accent">We&apos;ll film it.</span>
-        </h2>
-        <Waitlist />
+        <img src="/brand/clep-mark-cream.png" alt="" width={64} height={76} className="closer-mark" />
+        <h2 className="display small">Ship it. We&apos;ll film it.</h2>
+        <Waitlist cta="Join Waitlist" />
       </section>
 
       <footer className="home-foot">
-        <ClepLogo height={20} />
-        <span>© 2026 clep</span>
+        <img src="/brand/clep-logo-cream.png" alt="Clep" width={82} height={32} />
+        <span>© 2026 Clep</span>
         <nav>
-          <a href={SKILL_URL}>Skill</a>
+          <a href={SKILL_URL}>Docs</a>
+          <a href="/login">Login</a>
         </nav>
       </footer>
     </div>
   );
 }
 
-function RingMark() {
+/** Tiny marks for the agents Clep works with. */
+function AgentIcons() {
   return (
-    <svg className="ring-mark" viewBox="0 -14 200 134" aria-hidden preserveAspectRatio="none">
-      <path d="M18 70 C 14 30, 80 12, 128 18 C 176 24, 196 52, 182 80 C 166 108, 92 114, 50 102 C 20 94, 8 76, 24 56" />
-      <path d="M128 4 L 128 -10" />
-      <path d="M150 6 L 160 -6" />
-      <path d="M170 16 L 184 6" />
-    </svg>
+    <>
+      <svg viewBox="0 0 22 14" width="22" height="14" aria-hidden>
+        <g fill="#d97757">
+          <rect x="3" y="0" width="16" height="9" />
+          <rect x="0" y="4" width="3" height="3" />
+          <rect x="19" y="4" width="3" height="3" />
+          <rect x="4" y="9" width="2" height="5" /><rect x="8" y="9" width="2" height="5" />
+          <rect x="12" y="9" width="2" height="5" /><rect x="16" y="9" width="2" height="5" />
+        </g>
+        <rect x="6" y="3" width="2" height="2" fill="#1a1210" /><rect x="14" y="3" width="2" height="2" fill="#1a1210" />
+      </svg>
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden>
+        <path d="M8 1 L14.5 4.7 L14.5 11.3 L8 15 L1.5 11.3 L1.5 4.7 Z" fill="#3a3a3a" stroke="#d8d8d8" strokeWidth="1" />
+        <path d="M8 1 L8 8 L14.5 11.3 M8 8 L1.5 11.3" stroke="#d8d8d8" strokeWidth="1" fill="none" />
+        <path d="M8 1 L14.5 4.7 L8 8 L1.5 4.7 Z" fill="#f2f2f2" />
+      </svg>
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
+        <rect width="16" height="16" rx="4" fill="#5b7cfa" />
+        <circle cx="8" cy="8" r="4.2" fill="none" stroke="#fff" strokeWidth="1.6" />
+        <circle cx="8" cy="8" r="1.4" fill="#fff" />
+      </svg>
+    </>
   );
 }
