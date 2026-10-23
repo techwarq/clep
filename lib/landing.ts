@@ -6,8 +6,9 @@ export interface LandingVideo {
   line: string;
 }
 
-// Landing clips live on Cloudflare (R2 behind its CDN) when NEXT_PUBLIC_MEDIA_URL is set; otherwise public/showcase.
-const MEDIA_BASE = (process.env.NEXT_PUBLIC_MEDIA_URL ?? "").replace(/\/$/, "") || "/showcase";
+// Landing clips are served from R2 (bucket clep-site-media) through Cloudflare's CDN.
+// NEXT_PUBLIC_MEDIA_URL overrides it; set it to /showcase to use the copies in public/.
+const MEDIA_BASE = (process.env.NEXT_PUBLIC_MEDIA_URL || "https://media.clep.abstraklabs.com").replace(/\/$/, "");
 
 export const videoSrc = (slug: string) => `${MEDIA_BASE}/${slug}.mp4`;
 export const posterSrc = (slug: string) => `${MEDIA_BASE}/${slug}.jpg`;
