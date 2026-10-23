@@ -6,8 +6,11 @@ export interface LandingVideo {
   line: string;
 }
 
-export const videoSrc = (slug: string) => `/showcase/${slug}.mp4`;
-export const posterSrc = (slug: string) => `/showcase/${slug}.jpg`;
+// Landing clips live on Cloudflare (R2 behind its CDN) when NEXT_PUBLIC_MEDIA_URL is set; otherwise public/showcase.
+const MEDIA_BASE = (process.env.NEXT_PUBLIC_MEDIA_URL ?? "").replace(/\/$/, "") || "/showcase";
+
+export const videoSrc = (slug: string) => `${MEDIA_BASE}/${slug}.mp4`;
+export const posterSrc = (slug: string) => `${MEDIA_BASE}/${slug}.jpg`;
 
 export const HERO_VIDEO: LandingVideo = {
   slug: "hero-trakstartups",
