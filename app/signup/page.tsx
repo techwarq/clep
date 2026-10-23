@@ -1,6 +1,9 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import "../auth.css";
+import AuthSplit from "../../components/AuthSplit";
 
-// No accounts — access is by key.
+export const metadata: Metadata = { title: "Create your account — Clep" };
+
 export default function Signup() {
-  redirect("/login");
+  return <AuthSplit mode="signup" />;
 }

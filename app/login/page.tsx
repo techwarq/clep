@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import AuthCard from "../../components/AuthCard";
+import "../auth.css";
+import AuthSplit from "../../components/AuthSplit";
 
-export const metadata: Metadata = { title: "Enter your access key — clep" };
+export const metadata: Metadata = { title: "Log in — Clep" };
 
 export default function Login() {
-  return <AuthCard />;
+  return <AuthSplit mode="login" />;
 }

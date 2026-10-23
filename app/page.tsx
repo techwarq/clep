@@ -5,6 +5,7 @@ import PixelGrid from "../components/PixelGrid";
 import StickyNav from "../components/StickyNav";
 import Waitlist from "../components/Waitlist";
 import { EFFECTS, LAUNCH_VIDEO, PACING, SKILL_URL } from "../lib/landing";
+import { PLANS } from "../lib/pricing";
 
 const STEPS = [
   {
@@ -32,16 +33,11 @@ const RUN = [
   ["✓", "clip ready: clep/signup.mp4"],
 ];
 
-const PLANS = [
-  { name: "Free", price: "$0", note: "To start. Every effect, every format." },
-  { name: "Pro", price: "$12", note: "For when you post more.", featured: true },
-  { name: "Studio", price: "$29", note: "For teams shipping every day." },
-];
 
 const FOOTER_LINKS = [
-  { title: "Product", links: [["Work", "#work"], ["How It Works", "#how"], ["Pricing", "#pricing"]] },
+  { title: "Product", links: [["Work", "#work"], ["How It Works", "#how"], ["Pricing", "/pricing"]] },
   { title: "Resources", links: [["Docs", SKILL_URL], ["Common Questions", "#faq"]] },
-  { title: "Account", links: [["Join Waitlist", "#waitlist"], ["Login", "/login"]] },
+  { title: "Account", links: [["Reserve Your Spot", "/reserve"], ["Login", "/login"]] },
 ];
 
 const FAQ = [
@@ -67,7 +63,7 @@ const FAQ = [
   },
   {
     q: "What does it cost?",
-    a: "Free to start. Pro is $12 a month and Studio $29 a month when you post more.",
+    a: "Free to start, with every effect and format. Pro is $19 a month and Studio $39 a month when you post more.",
   },
 ];
 
@@ -89,7 +85,7 @@ export default function Page() {
         </nav>
         <div className="home-actions">
           <a href="/login" className="btn-line">Login</a>
-          <a href="#waitlist" className="btn-pink">Join Waitlist</a>
+          <a href="/reserve" className="btn-pink">Reserve Spot</a>
         </div>
       </StickyNav>
 
@@ -116,11 +112,11 @@ export default function Page() {
             Join <span>Private Beta</span>
           </h2>
           <p className="give-note">
-            Be the first to use Clep. Platform access
+            Be the first to use Clep. We&apos;ll email
             <br />
-            will be sent to you on the email below.
+            you an access code to get in.
           </p>
-          <Waitlist id="waitlist" />
+          <a href="/reserve" className="btn-soft give-cta">Reserve Your Spot</a>
         </div>
       </section>
 
@@ -135,7 +131,7 @@ export default function Page() {
           with Clep. Watch how AI agents record products in action and Clep transforms those recordings into polished,
           ready-to-share videos.
         </p>
-        <a href="#waitlist" className="btn-soft">Create Video</a>
+        <a href="/reserve" className="btn-soft">Create Video</a>
       </section>
 
       <section className="stage">
@@ -212,12 +208,13 @@ export default function Page() {
           {PLANS.map((plan) => (
             <div key={plan.name} className={plan.featured ? "plan featured" : "plan"}>
               <h3>{plan.name}</h3>
-              <p className="plan-price">{plan.price}<span>/mo</span></p>
-              <p>{plan.note}</p>
-              <a href="#waitlist" className={plan.featured ? "btn-pink" : "btn-line"}>Join Waitlist</a>
+              <p className="plan-price">${plan.monthly}<span>/mo</span></p>
+              <p>{plan.for}. {plan.minutes}.</p>
+              <a href="/reserve" className={plan.featured ? "btn-pink" : "btn-line"}>Reserve Spot</a>
             </div>
           ))}
         </div>
+        <a href="/pricing" className="block-cta">Compare all plans →</a>
       </section>
 
       <section id="faq" className="block questions">
@@ -231,19 +228,12 @@ export default function Page() {
       </section>
 
       <footer className="home-foot">
-        <div className="foot-cta">
-          <img src="/brand/clep-mark-cream.png" alt="" width={56} height={67} className="foot-cta-mark" />
-          <h2 className="display small">
-            Ship it. <span className="pink">We&apos;ll film it.</span>
-          </h2>
-          <Waitlist cta="Join Waitlist" />
+        <div className="foot-head">
+          <img src="/brand/clep-mark-cream.png" alt="" width={48} height={57} className="foot-mark" />
+          <img src="/brand/clep-word-cream.png" alt="Clep" width={392} height={171} className="foot-word" />
         </div>
-        <div className="foot-art">
-        <div className="foot-top">
-          <div className="foot-brand">
-            <img src="/brand/clep-logo-ink.png" alt="Clep" width={110} height={43} />
-            <p>Your agent records it, Clep cuts it. Product videos for every launch, every day.</p>
-          </div>
+
+        <div className="foot-main">
           <nav className="foot-cols" aria-label="Footer">
             {FOOTER_LINKS.map((col) => (
               <div key={col.title}>
@@ -254,11 +244,20 @@ export default function Page() {
               </div>
             ))}
           </nav>
+          <div className="foot-signup">
+            <p className="foot-signup-lead">
+              Ship it. <span className="pink">We&apos;ll film it.</span> Get early access to Clep.
+            </p>
+            <Waitlist variant="line" cta="Join" />
+            <p className="foot-fine">
+              Clep is in private beta. We&apos;ll only email you about your access.
+            </p>
+          </div>
         </div>
+
         <div className="foot-bottom">
-          <span>© 2026 Clep. All rights reserved.</span>
-          <span>Made with ♥ by <a href="https://abstraklabs.com">Abstrak Labs</a></span>
-        </div>
+          <span>© 2026 Clep · Made by <a href="https://abstraklabs.com">Abstrak Labs</a></span>
+          <a href="#top" className="foot-top-link">Back to top ↑</a>
         </div>
       </footer>
     </div>

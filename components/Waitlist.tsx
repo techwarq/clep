@@ -4,7 +4,7 @@ import { useState } from "react";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function Waitlist({ id, cta = "Reserve Your Spot" }: { id?: string; cta?: string }) {
+export default function Waitlist({ id, cta = "Reserve Your Spot", variant = "box" }: { id?: string; cta?: string; variant?: "box" | "line" }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -38,6 +38,28 @@ export default function Waitlist({ id, cta = "Reserve Your Spot" }: { id?: strin
       <p id={id} className="waitlist-done" role="status">
         You&apos;re on the list. We&apos;ll email {email.trim()} when it&apos;s your turn.
       </p>
+    );
+  }
+
+  if (variant === "line") {
+    return (
+      <form id={id} className="waitlist-line" onSubmit={submit} noValidate>
+        <input aria-label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="name" />
+        <div className="waitlist-line-row">
+          <input
+            aria-label="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Your email here"
+            autoComplete="email"
+            inputMode="email"
+          />
+          <button type="submit" disabled={busy} aria-label={cta}>
+            {busy ? "…" : "→"}
+          </button>
+        </div>
+        {error && <p className="waitlist-error" role="alert">{error}</p>}
+      </form>
     );
   }
 

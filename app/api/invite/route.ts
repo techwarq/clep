@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 const UPSTREAM = process.env.NEXT_PUBLIC_CLEP_API_URL ?? "https://api.clep.abstraklabs.com/v1";
 
 export async function POST(req: Request) {
-  let body: { name?: string; email?: string };
+  let body: { name?: string; email?: string; app?: string };
   try {
     body = await req.json();
   } catch {
@@ -11,6 +11,7 @@ export async function POST(req: Request) {
   }
   const name = body.name?.trim() ?? "";
   const email = body.email?.trim() ?? "";
+  const app = body.app?.trim().slice(0, 120) || undefined;
   if (name.length < 2) {
     return NextResponse.json({ error: "Tell us your name" }, { status: 400 });
   }
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     const res = await fetch(`${UPSTREAM}/invite`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email }),
+      body: JSON.stringify({ name, email, app }),
     });
     const data = await res.json().catch(() => ({}));
     return NextResponse.json(data, { status: res.status });
