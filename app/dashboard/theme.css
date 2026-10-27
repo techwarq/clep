@@ -1,0 +1,61 @@
+.cd {
+  --page: #0b0708 url(/brand/auth-sky.jpg) center 70% / cover fixed;
+  --page-veil: linear-gradient(180deg, rgba(8, 4, 6, 0.55), rgba(8, 4, 6, 0.35));
+  --frame: rgba(9, 6, 7, 0.9);
+  --panel: #151012;
+  --inset: rgba(251, 245, 234, 0.045);
+  --inset-strong: rgba(251, 245, 234, 0.08);
+  --overlay: #1c1417;
+  --ink: #fbf5ea;
+  --soft: rgba(251, 245, 234, 0.64);
+  --faint: rgba(251, 245, 234, 0.4);
+  --hair: rgba(251, 245, 234, 0.09);
+  --hair-strong: rgba(251, 245, 234, 0.22);
+  --accent: #ec6fa6;
+  --accent-text: #f7b6d2;
+  --accent-ink: #24070f;
+  --accent-wash: rgba(236, 111, 166, 0.14);
+  --accent-line: rgba(236, 111, 166, 0.45);
+  --green: #7fe0a0;
+  --green-wash: rgba(127, 224, 160, 0.12);
+  --blue: #8aaeff;
+  --blue-wash: rgba(138, 174, 255, 0.12);
+  --red: #ff8a8a;
+  --red-wash: rgba(255, 138, 138, 0.1);
+  --thumb: radial-gradient(80% 90% at 30% 20%, rgba(236, 111, 166, 0.32), transparent 70%), linear-gradient(135deg, #2a1820, #120a0e);
+  --shadow: 0 30px 80px -40px rgba(0, 0, 0, 0.9);
+  --display: var(--font-tight), "Inter Tight", system-ui, sans-serif;
+  --serif: var(--font-inst), "Instrument Serif", Georgia, serif;
+  --sans: var(--font-public), "Public Sans", system-ui, sans-serif;
+  --mono: var(--font-plex), "IBM Plex Mono", ui-monospace, monospace;
+  color-scheme: dark;
+}
+
+html[data-theme="light"] .cd {
+  --page: #fbf1f5;
+  --page-veil: radial-gradient(70% 60% at 15% 0%, rgba(236, 111, 166, 0.16), transparent 70%), radial-gradient(60% 50% at 100% 100%, rgba(255, 196, 214, 0.35), transparent 70%);
+  --frame: #f4e6ec;
+  --panel: #ffffff;
+  --inset: #fcf6f9;
+  --inset-strong: #f7ecf1;
+  --overlay: #ffffff;
+  --ink: #1f1418;
+  --soft: rgba(31, 20, 24, 0.62);
+  --faint: rgba(31, 20, 24, 0.42);
+  --hair: rgba(31, 20, 24, 0.08);
+  --hair-strong: rgba(31, 20, 24, 0.2);
+  --accent: #e2559a;
+  --accent-text: #c23d7f;
+  --accent-ink: #ffffff;
+  --accent-wash: rgba(226, 85, 154, 0.09);
+  --accent-line: rgba(226, 85, 154, 0.4);
+  --green: #1d9a56;
+  --green-wash: rgba(29, 154, 86, 0.1);
+  --blue: #3d63dd;
+  --blue-wash: rgba(61, 99, 221, 0.09);
+  --red: #d63c3c;
+  --red-wash: rgba(214, 60, 60, 0.08);
+  --thumb: radial-gradient(80% 90% at 30% 20%, rgba(236, 111, 166, 0.22), transparent 70%), linear-gradient(135deg, #fbe7ef, #f3dce6);
+  --shadow: 0 24px 60px -34px rgba(140, 40, 90, 0.35);
+  color-scheme: light;
+}

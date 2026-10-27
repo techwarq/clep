@@ -2,7 +2,7 @@
 .cd .cd-admin-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--hair); border-radius: 12px; }
 .cd .cd-admin-row > div:first-child { flex: 1 1 360px; min-width: 0; }
 .cd .cd-admin-row p { margin: 4px 0 0; font-size: 13px; }
-.cd .cd-admin-row a { color: var(--pink-soft); text-decoration: underline; }
+.cd .cd-admin-row a { color: var(--accent-text); text-decoration: underline; }
 .cd .cd-admin-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .cd .cd-admin-actions .cd-label { margin: 0; }
 .cd .cd-admin-search { max-width: 280px; }

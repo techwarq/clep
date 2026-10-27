@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useDash } from "../../lib/dashboard";
 import { isBusy } from "../../lib/platform";
+import { useTheme } from "../../lib/theme";
 import { minutesText } from "./ui";
 import { Ico } from "./icons";
 
@@ -20,6 +21,18 @@ const NAV = [
   { href: "/dashboard/settings", label: "Settings", icon: Ico.settings },
 ];
 
+const SUN = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" aria-hidden>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4" />
+  </svg>
+);
+const MOON = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />
+  </svg>
+);
+
 const ADMIN_LINK = { href: "/dashboard/admin", label: "Admin", icon: Ico.crown };
 
 const active = (path: string, href: string) => (href === "/dashboard" ? path === href : path.startsWith(href));
@@ -29,6 +42,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const { clips, account } = useDash();
+  const { applied, choose } = useTheme();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const email = account?.user.email ?? "";
@@ -105,6 +119,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             <kbd>⌘K</kbd>
           </form>
           <div className="cd-top-right">
+            <button type="button" className="cd-icon-btn cd-icon-plain" onClick={() => choose(applied === "dark" ? "light" : "dark")} aria-label={applied === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
+              {applied === "dark" ? SUN : MOON}
+            </button>
             <Link href="/dashboard/videos" className="cd-icon-btn cd-icon-plain" aria-label={rendering ? `${rendering} rendering` : "Videos"}>
               {Ico.bell}
               {rendering > 0 && <i className="cd-dot" />}
