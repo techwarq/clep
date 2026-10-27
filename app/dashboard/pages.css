@@ -169,10 +169,9 @@ html[data-theme="light"] .cd-hero .cd-btn-glass { background: rgba(255, 255, 255
   .cd-hero { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 900px) {
-  .cd { grid-template-columns: minmax(0, 1fr); margin: 8px; padding: 6px; border-radius: 24px; }
-  .cd-side { position: fixed; z-index: 40; left: 14px; top: 14px; height: calc(100vh - 28px); width: 252px; transform: translateX(calc(-100% - 30px)); transition: transform 0.25s ease; box-shadow: var(--shadow); }
+  .cd { grid-template-columns: minmax(0, 1fr); }
+  .cd-side { position: fixed; z-index: 40; left: 14px; top: 14px; height: calc(100dvh - 28px); width: 248px; transform: translateX(calc(-100% - 30px)); transition: transform 0.25s ease; box-shadow: var(--shadow); overflow-y: auto; }
   .cd-side.open { transform: none; }
-  .cd-top { top: 8px; }
   .cd-scrim { position: fixed; inset: 0; z-index: 30; background: rgba(0, 0, 0, 0.45); }
   .cd-menu { display: grid; }
   .cd-plans, .cd-split-even, .cd-brand-layout, .cd-stats-3 { grid-template-columns: minmax(0, 1fr); }

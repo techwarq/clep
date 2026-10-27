@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useDash } from "../../lib/dashboard";
@@ -49,7 +49,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const name = account?.user.name || (email ? email.split("@")[0] : "Your account");
   const initial = (name || "C")[0].toUpperCase();
 
-  useEffect(() => setOpen(false), [path]);
+  const main = useRef<HTMLElement>(null);
+  useEffect(() => {
+    setOpen(false);
+    main.current?.scrollTo({ top: 0 });
+  }, [path]);
 
   // ⌘K / Ctrl+K focuses search.
   useEffect(() => {
@@ -129,7 +133,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             <Link href="/dashboard/settings" className="cd-avatar cd-avatar-top" aria-label="Account">{initial}</Link>
           </div>
         </header>
-        <main className="cd-main">{children}</main>
+        <main ref={main} className="cd-main">{children}</main>
       </div>
     </div>
   );

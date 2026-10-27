@@ -1,7 +1,5 @@
 .cd {
-  --page: #0b0708 url(/brand/auth-sky.jpg) center 70% / cover fixed;
-  --page-veil: linear-gradient(180deg, rgba(8, 4, 6, 0.55), rgba(8, 4, 6, 0.35));
-  --frame: rgba(9, 6, 7, 0.9);
+  --frame: #070405;
   --panel: #151012;
   --inset: rgba(251, 245, 234, 0.045);
   --inset-strong: rgba(251, 245, 234, 0.08);
@@ -31,9 +29,7 @@
 }
 
 html[data-theme="light"] .cd {
-  --page: #fbf1f5;
-  --page-veil: radial-gradient(70% 60% at 15% 0%, rgba(236, 111, 166, 0.16), transparent 70%), radial-gradient(60% 50% at 100% 100%, rgba(255, 196, 214, 0.35), transparent 70%);
-  --frame: #f4e6ec;
+  --frame: #f1dfe7;
   --panel: #ffffff;
   --inset: #fcf6f9;
   --inset-strong: #f7ecf1;
