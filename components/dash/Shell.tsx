@@ -20,6 +20,8 @@ const NAV = [
   { href: "/dashboard/settings", label: "Settings", icon: Ico.settings },
 ];
 
+const ADMIN_LINK = { href: "/dashboard/admin", label: "Admin", icon: Ico.crown };
+
 const active = (path: string, href: string) => (href === "/dashboard" ? path === href : path.startsWith(href));
 
 /** Sidebar + top bar around every dashboard page. */
@@ -64,7 +66,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </Link>
 
         <nav className="cd-nav">
-          {NAV.map((n) => (
+          {[...NAV, ...(account?.is_admin ? [ADMIN_LINK] : [])].map((n) => (
             <Link key={n.href} href={n.href} className={active(path, n.href) ? "on" : ""}>
               {n.icon}
               <span>{n.label}</span>

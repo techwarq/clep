@@ -38,3 +38,5 @@
 @media (max-width: 900px) {
   .cd .cd-brand-preview { position: static; }
 }
+.cd .cd-swatches button { background-size: cover; background-position: center; }
+.cd .cd-swatch-group:first-of-type .cd-swatches button { width: 64px; height: 40px; }

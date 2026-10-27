@@ -6,7 +6,7 @@ export type Plan = "free" | "beta" | "pro" | "studio";
 export type ClipStatus = "queued" | "running" | "done" | "failed";
 export type User = { id: string; email: string; name: string | null };
 export type Usage = { plan: Plan; used_seconds: number; limit_seconds: number; period_start: string };
-export type Account = { user: User; usage: Usage; keys: number; connected: boolean };
+export type Account = { user: User; usage: Usage; keys: number; connected: boolean; is_admin: boolean };
 export type AccessKey = {
   id: string;
   label: string;
@@ -123,6 +123,36 @@ export const reserveSeat = async (seat: { name: string; email: string; product_u
   (await (await request("/api/reserve", { method: "POST", body: JSON.stringify(seat) }, null)).json()) as { status: "reserved" | "already_reserved" };
 
 export const getAccount = () => json<Account>("/api/me");
+
+export type AccessRequest = {
+  id: string;
+  name: string;
+  email: string;
+  product_url: string | null;
+  status: "pending" | "approved";
+  user_id: string | null;
+  approved_at: string | null;
+  created_at: string;
+};
+export type Approval = { request: AccessRequest; access_code: string; email: { sent: boolean; error?: string } };
+export type Member = {
+  id: string;
+  email: string;
+  name: string | null;
+  plan: Plan;
+  created_at: string;
+  keys: number;
+  clips: number;
+  used_seconds: number;
+  last_active_at: string | null;
+  is_admin: boolean;
+};
+
+export const listRequests = async (status?: "pending" | "approved") =>
+  (await json<{ requests: AccessRequest[] }>(`/api/admin/requests${status ? `?status=${status}` : ""}`)).requests;
+export const approveRequest = (id: string) => send<Approval>("POST", `/api/admin/requests/${encodeURIComponent(id)}/approve`);
+export const listMembers = () => json<{ members: Member[]; plans: Record<Plan, { exportMinutes: number; requestsPerMinute: number; activeJobs: number; keys: number }> }>("/api/admin/members");
+export const changePlan = (id: string, plan: Plan) => send<{ ok: true }>("PATCH", `/api/admin/members/${encodeURIComponent(id)}`, { plan });
 const keyPath = (id: string) => `/api/me/keys/${encodeURIComponent(id)}`;
 export const listKeys = () => json<{ keys: AccessKey[]; plan: PlanLimits }>("/api/me/keys");
 export const createKey = (settings: { label: string; minute_limit?: number | null }) => send<CreatedKey>("POST", "/api/me/keys", settings);

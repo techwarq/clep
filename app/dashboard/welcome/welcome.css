@@ -1,0 +1,16 @@
+.cd .cd-welcome { gap: 20px; }
+.cd .cd-wizard-steps { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.cd .cd-wizard-steps button { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border: 1px solid var(--hair); border-radius: 999px; background: none; color: var(--faint); font: inherit; font-size: 13px; cursor: pointer; }
+.cd .cd-wizard-steps button:disabled { cursor: default; }
+.cd .cd-wizard-steps span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--raise); font-size: 12px; }
+.cd .cd-wizard-steps span svg { width: 13px; height: 13px; }
+.cd .cd-wizard-steps .now button { border-color: var(--pink); color: var(--cream); }
+.cd .cd-wizard-steps .now span { background: var(--pink); color: #1a0f13; }
+.cd .cd-wizard-steps .done button { color: var(--soft); }
+.cd .cd-wizard-steps .done span { background: rgba(127, 224, 160, 0.2); color: var(--green); }
+.cd .cd-wizard-card { display: grid; gap: 14px; padding: 28px; }
+.cd .cd-wizard-card h1 { margin: 0; font: 700 clamp(26px, 3vw, 38px)/1.1 var(--display); letter-spacing: -0.02em; }
+.cd .cd-wizard-list { display: grid; gap: 10px; margin: 4px 0; padding: 0; list-style: none; }
+.cd .cd-wizard-list li { display: flex; align-items: center; gap: 12px; color: var(--soft); }
+.cd .cd-wizard-list svg { color: var(--pink); }
+.cd .cd-wizard-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 6px; }

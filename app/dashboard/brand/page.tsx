@@ -22,7 +22,7 @@ import {
 import { getBrandKit, saveBrandKit, type BrandKit } from "../../../lib/platform";
 
 const STARTER: BrandKit = { style: "saas", bg: "saas", aspect: "16:9", movement: "standard", captions: true, look: { sound: "warm" } };
-const GROUPS = ["Light", "Bold", "Dark", "Solid"] as const;
+const GROUPS = ["Wallpapers", "Light", "Bold", "Dark", "Solid"] as const;
 
 export default function Brand() {
   const { toast, fail } = useDash();
@@ -30,13 +30,16 @@ export default function Brand() {
   const [saved, setSaved] = useState<string>(JSON.stringify(STARTER));
   const [custom, setCustom] = useState(["#ec6fa6", "#ffd27a"]);
   const [busy, setBusy] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    getBrandKit().then((stored) => {
-      if (!stored) return;
-      setKit(stored);
-      setSaved(JSON.stringify(stored));
-    }, fail);
+    getBrandKit()
+      .then((stored) => {
+        if (!stored) return;
+        setKit(stored);
+        setSaved(JSON.stringify(stored));
+      }, fail)
+      .finally(() => setReady(true));
   }, [fail]);
 
   const set = (patch: BrandKit) => setKit((current) => ({ ...current, ...patch }));
@@ -67,8 +70,8 @@ export default function Brand() {
     <div className="cd-page">
       <PageHead title="Brand kit" sub="Look, backdrop, frame, cursor and sound for every new clip. Your agent never needs to know; anything it asks for still wins.">
         <button type="button" className="cd-btn" onClick={() => setKit(STARTER)}>Reset</button>
-        <button type="button" className="cd-btn cd-btn-pink" onClick={() => void save()} disabled={!dirty || busy}>
-          {busy ? "Saving…" : dirty ? "Save kit" : "Saved"}
+        <button type="button" className="cd-btn cd-btn-pink" onClick={() => void save()} disabled={!ready || !dirty || busy}>
+          {!ready ? "Loading…" : busy ? "Saving…" : dirty ? "Save kit" : "Saved"}
         </button>
       </PageHead>
 

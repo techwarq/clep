@@ -80,7 +80,7 @@ export default function Home() {
             <h1>Turn your code <span>into videos</span></h1>
             <p>Connect your coding agent once. Every time you ship a feature, Clep records, edits and delivers a ready-to-publish video.</p>
             <div className="cd-hero-cta">
-              <Link href="/dashboard/keys" className="cd-btn cd-btn-pink cd-btn-lg">Get Started {Ico.arrow}</Link>
+              <Link href="/dashboard/welcome" className="cd-btn cd-btn-pink cd-btn-lg">{setupDone === setup.length ? "See setup again" : "Continue setup"} {Ico.arrow}</Link>
               <Link href="/#work" className="cd-btn cd-btn-glass cd-btn-lg">{Ico.play} See what it makes</Link>
             </div>
           </div>

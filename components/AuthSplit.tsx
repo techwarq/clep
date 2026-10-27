@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { sessionToken, signIn } from "../lib/platform";
+import { getAccount, sessionToken, signIn } from "../lib/platform";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ACCESS_CODE = /^\d{6}$/;
@@ -36,7 +36,8 @@ function SignInPanel() {
     setBusy(true);
     try {
       await signIn(email.trim().toLowerCase(), code.trim());
-      router.push("/dashboard");
+      const account = await getAccount().catch(() => null);
+      router.push(account && account.keys === 0 ? "/dashboard/welcome" : "/dashboard");
     } catch (err) {
       setBusy(false);
       setError(err instanceof Error ? err.message : "Something went wrong, try again");

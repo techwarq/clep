@@ -1,4 +1,4 @@
-export type Backdrop = { name: string; value: string; group: "Light" | "Bold" | "Dark" | "Solid" };
+export type Backdrop = { name: string; value: string; group: "Wallpapers" | "Light" | "Bold" | "Dark" | "Solid" };
 
 const PRESET_STOPS: Record<string, string[]> = {
   saas: ["#c4b5fd", "#fbcfe8", "#bfdbfe"],
@@ -8,7 +8,13 @@ const PRESET_STOPS: Record<string, string[]> = {
   blush: ["#fae2ee", "#fdf5fa", "#f0d6e6"],
 };
 
+const WALLPAPERS: [string, string][] = [
+  ["sonoma", "Sonoma"], ["dune", "Dune"], ["sunset", "Sunset hills"], ["ocean", "Ocean"], ["silk", "Silk"],
+  ["aurora", "Aurora"], ["dusk-mesh", "Dusk mesh"], ["graphite", "Graphite"], ["pixel-clouds", "Pixel clouds"],
+];
+
 export const BACKDROPS: Backdrop[] = [
+  ...WALLPAPERS.map(([id, name]): Backdrop => ({ name, value: `wallpaper:${id}`, group: "Wallpapers" })),
   { name: "Lavender", value: "saas", group: "Light" },
   { name: "Mist", value: "minimal", group: "Light" },
   { name: "Glacier", value: "apple", group: "Light" },
@@ -88,13 +94,12 @@ export const SOUNDS = [
 ];
 
 export function backdropCss(value: string): string {
+  if (value.startsWith("wallpaper:")) return `center / cover no-repeat url(/wallpapers/${value.slice(10)}.jpg)`;
   if (PRESET_STOPS[value]) return `linear-gradient(135deg, ${PRESET_STOPS[value].join(", ")})`;
   if (value.startsWith("solid:")) return value.slice(6);
   const stops = value.split(",").map((stop) => stop.trim()).filter(Boolean);
   return stops.length > 1 ? `linear-gradient(135deg, ${stops.join(", ")})` : stops[0] ?? "#c4b5fd";
 }
-
-export const isDarkBackdrop = (value: string) => BACKDROPS.find((b) => b.value === value)?.group === "Dark" || value === "solid:#0b0709";
 
 export const cursorWords = (shape: string, color: string, size: string) => [shape, color, size].filter(Boolean).join(" ");
 
