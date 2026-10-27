@@ -40,8 +40,10 @@ body:has(.cd) { overflow: hidden; }
 }
 .cd-body { position: relative; z-index: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; border-radius: 20px; background: var(--panel); overflow: hidden; }
 .cd-brand { display: flex; align-items: center; gap: 10px; padding: 0 10px 8px; }
-.cd-brand img { height: 28px; width: auto; }
-.cd-word { font: 600 22px/1 var(--display); letter-spacing: -0.02em; }
+.cd-logo { height: 32px; width: auto; }
+.cd-logo-light { display: none; }
+html[data-theme="light"] .cd-logo-dark { display: none; }
+html[data-theme="light"] .cd-logo-light { display: block; }
 .cd-badge { margin-left: auto; padding: 2px 8px; border-radius: 999px; background: var(--accent-wash); color: var(--accent-text); font: 600 10px/1.6 var(--display); letter-spacing: 0.12em; text-transform: uppercase; }
 
 .cd-nav { display: grid; gap: 2px; }
@@ -80,7 +82,7 @@ body:has(.cd) { overflow: hidden; }
 .cd-dot { position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--panel); }
 .cd-menu { display: none; }
 
-.cd-main { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 4px clamp(14px, 2vw, 24px) 24px; }
+.cd-main { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 18px clamp(18px, 2.4vw, 30px) 30px; }
 .cd-main::-webkit-scrollbar { width: 10px; }
 .cd-main::-webkit-scrollbar-thumb { border: 3px solid var(--panel); border-radius: 999px; background: var(--hair-strong); }
 .cd-side::-webkit-scrollbar { width: 0; }

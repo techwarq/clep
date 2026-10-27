@@ -70,7 +70,7 @@ export default function Keys() {
           <div className="cd-card-head">
             <div>
               <h2>Create a key</h2>
-              <p>One per agent or CI, so you can revoke one without touching the others. A minute limit caps what this key alone can spend each month.</p>
+              <p>One per agent or CI, so you can revoke one without touching the others. Set an expiration for keys you hand to CI or teammates.</p>
             </div>
           </div>
           <CreateKeyForm full={full} suggestion={`${AGENTS[agent][0]} on my laptop`} onCreated={(key) => show(key, false)} />

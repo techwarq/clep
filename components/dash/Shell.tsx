@@ -78,8 +78,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     <div className="cd">
       <aside className={`cd-side ${open ? "open" : ""}`}>
         <Link href="/dashboard" className="cd-brand" aria-label="Clep dashboard">
-          <img src="/brand/clep-mark-gradient.png" alt="" width={30} height={36} />
-          <span className="cd-word">Clep</span>
+          <img src="/brand/clep-logo-gradient.png" alt="Clep" width={82} height={32} className="cd-logo cd-logo-dark" />
+          <img src="/brand/clep-logo-light.png" alt="Clep" width={82} height={32} className="cd-logo cd-logo-light" />
           <span className="cd-badge">Beta</span>
         </Link>
 
