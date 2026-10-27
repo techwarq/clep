@@ -47,7 +47,6 @@ export default function Keys() {
   const paste = `Set up Clep for this project: read ${API_BASE}/skill.md and follow it`;
   const connected = projects[0];
   const agentSeen = !!account?.connected || !!connected || clips.length > 0;
-  const full = !!plan && !!keys && keys.length >= plan.keys;
 
   return (
     <div className="cd-page cd-narrow">
@@ -56,7 +55,7 @@ export default function Keys() {
       {plan && (
         <section className="cd-plan-strip" aria-label="Your plan's limits">
           <span className="cd-tag">{plan.name} plan</span>
-          <span><b>{keys?.length ?? 0}/{plan.keys}</b> keys</span>
+          <span><b>{keys?.length ?? 0}</b> key{keys?.length === 1 ? "" : "s"}</span>
           <span><b>{plan.requests_per_minute}</b> requests/min per key</span>
           <span><b>{plan.active_jobs}</b> video{plan.active_jobs === 1 ? "" : "s"} at a time</span>
           <span><b>{plan.export_minutes}</b> export min/month</span>
@@ -73,7 +72,7 @@ export default function Keys() {
               <p>One per agent or CI, so you can revoke one without touching the others. Set an expiration for keys you hand to CI or teammates.</p>
             </div>
           </div>
-          <CreateKeyForm full={full} suggestion={`${AGENTS[agent][0]} on my laptop`} onCreated={(key) => show(key, false)} />
+          <CreateKeyForm suggestion={`${AGENTS[agent][0]} on my laptop`} onCreated={(key) => show(key, false)} />
         </section>
       )}
 

@@ -14,7 +14,7 @@ const EXPIRATIONS: [string, number | null][] = [
   ["1 year", 365],
 ];
 
-export default function CreateKeyForm({ full, suggestion, onCreated }: { full: boolean; suggestion: string; onCreated: (key: CreatedKey) => void }) {
+export default function CreateKeyForm({ suggestion, onCreated }: { suggestion: string; onCreated: (key: CreatedKey) => void }) {
   const { fail } = useDash();
   const [label, setLabel] = useState("");
   const [expiry, setExpiry] = useState(0);
@@ -46,8 +46,8 @@ export default function CreateKeyForm({ full, suggestion, onCreated }: { full: b
           {EXPIRATIONS.map(([name], i) => <option key={name} value={i}>{name}</option>)}
         </select>
       </label>
-      <button type="submit" className="cd-btn cd-btn-pink" disabled={busy || full}>
-        {full ? "Key limit reached" : busy ? "Creating…" : <>Create key {Ico.arrow}</>}
+      <button type="submit" className="cd-btn cd-btn-pink" disabled={busy}>
+        {busy ? "Creating…" : <>Create key {Ico.arrow}</>}
       </button>
     </form>
   );

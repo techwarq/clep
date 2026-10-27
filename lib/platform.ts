@@ -20,7 +20,7 @@ export type AccessKey = {
   last_used_at: string | null;
 };
 export type CreatedKey = AccessKey & { key: string };
-export type PlanLimits = { name: Plan; keys: number; requests_per_minute: number; active_jobs: number; export_minutes: number };
+export type PlanLimits = { name: Plan; requests_per_minute: number; active_jobs: number; export_minutes: number };
 export type KeyChanges = { label?: string; disabled?: boolean };
 export type BrandKit = {
   style?: string;
@@ -152,7 +152,7 @@ export type Member = {
 export const listRequests = async (status?: "pending" | "approved") =>
   (await json<{ requests: AccessRequest[] }>(`/api/admin/requests${status ? `?status=${status}` : ""}`)).requests;
 export const approveRequest = (id: string) => send<Approval>("POST", `/api/admin/requests/${encodeURIComponent(id)}/approve`);
-export const listMembers = () => json<{ members: Member[]; plans: Record<Plan, { exportMinutes: number; requestsPerMinute: number; activeJobs: number; keys: number }> }>("/api/admin/members");
+export const listMembers = () => json<{ members: Member[]; plans: Record<Plan, { exportMinutes: number; requestsPerMinute: number; activeJobs: number }> }>("/api/admin/members");
 export const changePlan = (id: string, plan: Plan) => send<{ ok: true }>("PATCH", `/api/admin/members/${encodeURIComponent(id)}`, { plan });
 const keyPath = (id: string) => `/api/me/keys/${encodeURIComponent(id)}`;
 export const listKeys = () => json<{ keys: AccessKey[]; plan: PlanLimits }>("/api/me/keys");

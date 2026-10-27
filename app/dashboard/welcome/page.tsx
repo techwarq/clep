@@ -83,7 +83,7 @@ export default function Welcome() {
           ) : (
             <>
               {hasKey && <p className="cd-connected"><i /> You have a key. Create another one or continue.</p>}
-              <CreateKeyForm full={false} suggestion={`${AGENTS[agent][0]} on my laptop`} onCreated={(key) => { setCreated(key); void refresh(); }} />
+              <CreateKeyForm suggestion={`${AGENTS[agent][0]} on my laptop`} onCreated={(key) => { setCreated(key); void refresh(); }} />
               {hasKey && <div className="cd-wizard-nav"><button type="button" className="cd-btn cd-btn-pink" onClick={next}>Continue {Ico.arrow}</button></div>}
             </>
           )}
