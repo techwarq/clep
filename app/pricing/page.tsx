@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 const FAQ = [
   {
     q: "What counts as an export minute?",
-    a: "One minute of finished video. A 40-second clip uses 40 seconds. A 4K export counts double, so a 1-minute 4K clip uses 2 minutes.",
+    a: "One minute of finished video. A 40-second clip uses 40 seconds. Minutes count the same at any quality, 1080p or 4K.",
   },
   {
     q: "Why is Clep this cheap?",
@@ -21,7 +21,7 @@ const FAQ = [
   },
   {
     q: "What happens when I hit my limit?",
-    a: "Renders pause until next month. You can buy 20 more minutes for $8, or turn on overage at about $0.40 per extra minute.",
+    a: "Renders pause until next month, or you can top up 5 more minutes for $8.",
   },
   {
     q: "Does the Free plan get every effect?",
@@ -68,7 +68,7 @@ export default function Pricing() {
 
       <section className="block pricing-cards">
         <PricingPlans />
-        <p className="plans-note">A 4K export counts as 2 minutes of your allowance.</p>
+        <p className="plans-note">Minutes count the same at any quality. Top up 5 more for $8 any time.</p>
       </section>
 
       <section className="block">
@@ -105,7 +105,7 @@ export default function Pricing() {
       <section className="block">
         <div className="block-head">
           <h2 className="block-title">Need <span className="pink">more?</span></h2>
-          <p className="block-note">Add-ons for Pro and Studio. Buy them when you need them.</p>
+          <p className="block-note">Top up when you need more. Talk to us for anything bigger.</p>
         </div>
         <div className="addons">
           {ADDONS.map((addon) => (

@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { reserveSeat } from "../lib/platform";
 import { AuthArt, MailIcon } from "./AuthSplit";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Private beta sign-up, laid out like log in / sign up. The access code is emailed afterwards. */
 export default function ReserveSpot() {
   const [name, setName] = useState("");
-  const [app, setApp] = useState("");
+  const [productUrl, setProductUrl] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -19,16 +19,12 @@ export default function ReserveSpot() {
     e.preventDefault();
     if (name.trim().length < 2) return setError("Tell us your name");
     if (!EMAIL.test(email.trim())) return setError("Enter a valid email");
+    const site = productUrl.trim();
+    if (site && !/^https?:\/\/\S+\.\S+/i.test(site)) return setError("Product link must start with https://");
     setError("");
     setBusy(true);
     try {
-      const res = await fetch("/api/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim(), app: app.trim() || undefined }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.error || data?.message || "Something went wrong, try again");
+      await reserveSeat({ name: name.trim(), email: email.trim().toLowerCase(), product_url: site || undefined });
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong, try again");
@@ -50,16 +46,16 @@ export default function ReserveSpot() {
           {done ? (
             <div className="auth-done" role="status">
               <h1>
-                You&apos;re
+                You&apos;re On
                 <br />
-                <span>In.</span>
+                The <span>List</span>
               </h1>
               <p className="auth-lead">
-                Your access code is on its way to <strong>{email.trim()}</strong>.
+                When your seat opens we&apos;ll email an access code to <strong>{email.trim()}</strong>.
                 <br />
-                It should land in a few minutes. Check your inbox and your spam folder.
+                Sign in with it here.
               </p>
-              <Link href="/login" className="auth-submit">Log in with your code</Link>
+              <Link href="/signin" className="auth-submit">I have my code</Link>
             </div>
           ) : (
             <>
@@ -77,7 +73,7 @@ export default function ReserveSpot() {
                 </label>
                 <label className="auth-field">
                   <AppIcon />
-                  <input value={app} onChange={(e) => setApp(e.target.value)} placeholder="App name (optional)" autoComplete="organization" />
+                  <input value={productUrl} onChange={(e) => setProductUrl(e.target.value)} placeholder="Product link (optional)" autoComplete="url" inputMode="url" />
                 </label>
                 <label className="auth-field">
                   <MailIcon />
@@ -101,7 +97,7 @@ export default function ReserveSpot() {
           )}
 
           <p className="auth-alt">
-            Already have a code? <Link href="/login">Log in</Link>
+            Already have a code? <Link href="/signin">Sign in</Link>
           </p>
         </div>
       </section>

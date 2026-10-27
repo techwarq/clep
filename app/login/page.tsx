@@ -1,9 +1,5 @@
-import type { Metadata } from "next";
-import "../auth.css";
-import AuthSplit from "../../components/AuthSplit";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Log in — Clep" };
-
-export default function Login() {
-  return <AuthSplit mode="login" />;
+export default function LoginInstead({ searchParams }: { searchParams: { email?: string } }) {
+  redirect(searchParams.email ? `/signin?email=${encodeURIComponent(searchParams.email)}` : "/signin");
 }

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
-// Billing moved into the sidebar (see app/dashboard/page.tsx) — this route
+// Billing lives at /dashboard/billing — this route
 // stays only so old bookmarks/links land somewhere real.
 export default function UpgradeRedirect() {
-  redirect("/dashboard?view=billing");
+  redirect("/dashboard/billing");
 }

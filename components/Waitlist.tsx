@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { reserveSeat } from "../lib/platform";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -18,13 +19,7 @@ export default function Waitlist({ id, cta = "Reserve Your Spot", variant = "box
     setError("");
     setBusy(true);
     try {
-      const res = await fetch("/api/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim() }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.error || data?.message || "Something went wrong, try again");
+      await reserveSeat({ name: name.trim(), email: email.trim().toLowerCase() });
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong, try again");
