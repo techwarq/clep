@@ -7,8 +7,20 @@ export type ClipStatus = "queued" | "running" | "done" | "failed";
 export type User = { id: string; email: string; name: string | null };
 export type Usage = { plan: Plan; used_seconds: number; limit_seconds: number; period_start: string };
 export type Account = { user: User; usage: Usage; keys: number; connected: boolean };
-export type AccessKey = { id: string; prefix: string; label: string | null; created_at: string; last_used_at: string | null };
+export type AccessKey = {
+  id: string;
+  label: string;
+  prefix: string;
+  last4: string | null;
+  minute_limit: number | null;
+  disabled: boolean;
+  used_seconds: number;
+  created_at: string;
+  last_used_at: string | null;
+};
 export type CreatedKey = AccessKey & { key: string };
+export type PlanLimits = { name: Plan; keys: number; requests_per_minute: number; active_jobs: number; export_minutes: number };
+export type KeyChanges = { label?: string; minute_limit?: number | null; disabled?: boolean };
 export type BrandKit = {
   style?: string;
   bg?: string;
@@ -111,9 +123,13 @@ export const reserveSeat = async (seat: { name: string; email: string; product_u
   (await (await request("/api/reserve", { method: "POST", body: JSON.stringify(seat) }, null)).json()) as { status: "reserved" | "already_reserved" };
 
 export const getAccount = () => json<Account>("/api/me");
-export const listKeys = async () => (await json<{ keys: AccessKey[] }>("/api/me/keys")).keys;
-export const createKey = (label: string) => send<CreatedKey>("POST", "/api/me/keys", { label });
-export const revokeKey = (id: string) => send<{ ok: true }>("DELETE", `/api/me/keys/${encodeURIComponent(id)}`);
+const keyPath = (id: string) => `/api/me/keys/${encodeURIComponent(id)}`;
+export const listKeys = () => json<{ keys: AccessKey[]; plan: PlanLimits }>("/api/me/keys");
+export const createKey = (settings: { label: string; minute_limit?: number | null }) => send<CreatedKey>("POST", "/api/me/keys", settings);
+export const updateKey = (id: string, changes: KeyChanges) => send<{ ok: true }>("PATCH", keyPath(id), changes);
+export const rotateKey = (id: string) => send<CreatedKey>("POST", `${keyPath(id)}/rotate`);
+export const revokeKey = (id: string) => send<{ ok: true }>("DELETE", keyPath(id));
+export const maskedKey = (key: Pick<AccessKey, "prefix" | "last4">) => `${key.prefix}${key.last4 ? `••••••••${key.last4}` : "••••••••"}`;
 export const listClips = async () => (await json<{ clips: Clip[] }>("/api/me/clips")).clips;
 export const getClip = (id: string) => json<Clip>(`/api/me/clips/${encodeURIComponent(id)}`);
 export const startClip = (body: { url: string; name?: string; prompt?: string }) => send<Clip>("POST", "/api/me/clips", body);

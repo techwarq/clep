@@ -1,10 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Ico } from "../../../components/dash/icons";
+import CreateKeyForm from "../../../components/dash/keys/CreateKeyForm";
+import KeyRow from "../../../components/dash/keys/KeyRow";
+import NewKeyPanel from "../../../components/dash/keys/NewKeyPanel";
 import { CopyField, PageHead } from "../../../components/dash/ui";
-import { ago, useDash } from "../../../lib/dashboard";
-import { API_BASE, createKey, listKeys, revokeKey, type AccessKey, type CreatedKey } from "../../../lib/platform";
+import { useDash } from "../../../lib/dashboard";
+import { API_BASE, listKeys, type AccessKey, type CreatedKey, type PlanLimits } from "../../../lib/platform";
+import "./keys.css";
 
 const AGENTS: [string, string][] = [
   ["Claude Code", "Paste it into Claude Code, opened in your project folder."],
@@ -15,129 +18,121 @@ const AGENTS: [string, string][] = [
 ];
 
 export default function Keys() {
-  const { projects, clips, account, refresh, toast, fail } = useDash();
+  const { projects, clips, account, refresh, fail } = useDash();
   const [keys, setKeys] = useState<AccessKey[] | null>(null);
-  const [fresh, setFresh] = useState<CreatedKey | null>(null);
-  const [label, setLabel] = useState("");
+  const [plan, setPlan] = useState<PlanLimits | null>(null);
+  const [fresh, setFresh] = useState<{ key: CreatedKey; rotated: boolean } | null>(null);
   const [agent, setAgent] = useState(0);
-  const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => listKeys().then(setKeys, fail), [fail]);
+  const load = useCallback(async () => {
+    try {
+      const listed = await listKeys();
+      setKeys(listed.keys);
+      setPlan(listed.plan);
+    } catch (err) {
+      fail(err);
+    }
+  }, [fail]);
   useEffect(() => void load(), [load]);
 
-  const create = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      setFresh(await createKey(label.trim() || AGENTS[agent][0]));
-      setLabel("");
-      await Promise.all([load(), refresh()]);
-    } catch (err) {
-      fail(err);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const changed = useCallback(async () => {
+    await Promise.all([load(), refresh()]);
+  }, [load, refresh]);
 
-  const revoke = async (key: AccessKey) => {
-    if (!window.confirm(`Revoke "${key.label ?? key.prefix}"? Agents using it stop working right away.`)) return;
-    try {
-      await revokeKey(key.id);
-      if (fresh?.id === key.id) setFresh(null);
-      toast("Key revoked");
-      await Promise.all([load(), refresh()]);
-    } catch (err) {
-      fail(err);
-    }
+  const show = (key: CreatedKey, rotated: boolean) => {
+    setFresh({ key, rotated });
+    void changed();
   };
 
   const paste = `Set up Clep for this project: read ${API_BASE}/skill.md and follow it`;
   const connected = projects[0];
   const agentSeen = !!account?.connected || !!connected || clips.length > 0;
+  const full = !!plan && !!keys && keys.length >= plan.keys;
 
   return (
     <div className="cd-page cd-narrow">
-      <PageHead title="Connect your coding agent" sub="Four steps, once per project. This page turns green when your agent makes its first call." />
+      <PageHead title="API keys" sub="Your coding agent and CI authenticate with these. Each key is shown once; you can pause, regenerate or revoke it any time." />
 
-      <ol className="cd-onboard">
-        <li>
-          <span className={`cd-step-n ${fresh || keys?.length ? "ok" : ""}`}>1</span>
-          <div>
-            <h3>Create an API key</h3>
-            {fresh ? (
-              <>
-                <CopyField value={`export CLEP_API_KEY=${fresh.key}`} />
-                <p className="cd-note">Copy it now: this is the only time Clep shows the full key. Run it in the terminal you start your agent from, and never commit it.</p>
-              </>
-            ) : (
-              <form className="cd-inline-form" onSubmit={create}>
-                <input className="cd-input" value={label} onChange={(e) => setLabel(e.target.value)} placeholder={`Label, e.g. ${AGENTS[agent][0]} on my laptop`} maxLength={60} />
-                <button type="submit" className="cd-btn cd-btn-pink" disabled={busy}>{busy ? "Creating…" : <>Create key {Ico.arrow}</>}</button>
-              </form>
-            )}
-          </div>
-        </li>
+      {plan && (
+        <section className="cd-plan-strip" aria-label="Your plan's limits">
+          <span className="cd-tag">{plan.name} plan</span>
+          <span><b>{keys?.length ?? 0}/{plan.keys}</b> keys</span>
+          <span><b>{plan.requests_per_minute}</b> requests/min per key</span>
+          <span><b>{plan.active_jobs}</b> video{plan.active_jobs === 1 ? "" : "s"} at a time</span>
+          <span><b>{plan.export_minutes}</b> export min/month</span>
+        </section>
+      )}
 
-        <li>
-          <span className="cd-step-n">2</span>
-          <div>
-            <h3>Pick your agent</h3>
-            <div className="cd-pills cd-pills-btn" role="tablist">
-              {AGENTS.map(([name], i) => (
-                <button key={name} type="button" role="tab" aria-selected={agent === i} className={agent === i ? "on" : ""} onClick={() => setAgent(i)}>
-                  {name}
-                </button>
-              ))}
+      {fresh ? (
+        <NewKeyPanel created={fresh.key} rotated={fresh.rotated} onDone={() => setFresh(null)} />
+      ) : (
+        <section className="cd-card">
+          <div className="cd-card-head">
+            <div>
+              <h2>Create a key</h2>
+              <p>One per agent or CI, so you can revoke one without touching the others. A minute limit caps what this key alone can spend each month.</p>
             </div>
           </div>
-        </li>
+          <CreateKeyForm full={full} suggestion={`${AGENTS[agent][0]} on my laptop`} onCreated={(key) => show(key, false)} />
+        </section>
+      )}
 
-        <li>
-          <span className="cd-step-n">3</span>
-          <div>
-            <h3>Paste this into your agent</h3>
-            <CopyField value={paste} />
-            <p className="cd-muted">{AGENTS[agent][1]} It installs Clep's recorder, lists your app's features and records a first walkthrough.</p>
-          </div>
-        </li>
-
-        <li>
-          <span className={`cd-step-n ${agentSeen ? "ok" : ""}`}>4</span>
-          <div>
-            {agentSeen ? (
-              <p className="cd-connected">
-                <i /> Connected
-                {connected && <> · {connected.name}{connected.framework && ` · ${connected.framework}`}{connected.app_url && ` · ${connected.app_url}`}</>}
-              </p>
-            ) : (
-              <p className="cd-waiting"><i /> Waiting for your agent…</p>
-            )}
-          </div>
-        </li>
-      </ol>
+      <section className="cd-card">
+        <div className="cd-card-head">
+          <h2>Your keys</h2>
+        </div>
+        {keys === null && <p className="cd-muted">Loading…</p>}
+        {keys?.length === 0 && <p className="cd-muted">No keys yet. Create one above, then give it to your agent.</p>}
+        <div className="cd-keylist">
+          {keys?.map((entry) => (
+            <KeyRow key={entry.id} entry={entry} planMinutes={plan?.export_minutes ?? 0} onChanged={changed} onRotated={(key) => show(key, true)} />
+          ))}
+        </div>
+      </section>
 
       <section className="cd-card">
         <div className="cd-card-head">
           <div>
-            <h2>Keys</h2>
-            <p>One key per agent or CI, so you can revoke one without touching the others.</p>
+            <h2>Connect your agent</h2>
+            <p>Once per project. This turns green when your agent makes its first call.</p>
           </div>
-          {fresh && <button type="button" className="cd-btn" onClick={() => setFresh(null)}>New key</button>}
         </div>
-        {keys === null && <p className="cd-muted">Loading…</p>}
-        {keys?.length === 0 && <p className="cd-muted">No keys yet. Create one above.</p>}
-        {keys?.map((key) => (
-          <div key={key.id} className="cd-keyrow">
+        <ol className="cd-onboard">
+          <li>
+            <span className="cd-step-n">1</span>
             <div>
-              <b>{key.label ?? "Untitled key"}</b>
-              <code>{key.prefix}••••••••</code>
-              <small className="cd-muted">
-                Created {ago(key.created_at)} · {key.last_used_at ? `last used ${ago(key.last_used_at)}` : "never used"}
-              </small>
+              <h3>Pick your agent</h3>
+              <div className="cd-pills cd-pills-btn" role="tablist">
+                {AGENTS.map(([name], i) => (
+                  <button key={name} type="button" role="tab" aria-selected={agent === i} className={agent === i ? "on" : ""} onClick={() => setAgent(i)}>
+                    {name}
+                  </button>
+                ))}
+              </div>
             </div>
-            <button type="button" className="cd-btn cd-btn-danger cd-btn-sm" onClick={() => void revoke(key)}>Revoke</button>
-          </div>
-        ))}
+          </li>
+          <li>
+            <span className="cd-step-n">2</span>
+            <div>
+              <h3>Set the key, then paste this into your agent</h3>
+              <CopyField value={paste} />
+              <p className="cd-muted">{AGENTS[agent][1]} It installs Clep's recorder, lists your app's features and records a first walkthrough.</p>
+            </div>
+          </li>
+          <li>
+            <span className={`cd-step-n ${agentSeen ? "ok" : ""}`}>3</span>
+            <div>
+              {agentSeen ? (
+                <p className="cd-connected">
+                  <i /> Connected
+                  {connected && <> · {connected.name}{connected.framework && ` · ${connected.framework}`}{connected.app_url && ` · ${connected.app_url}`}</>}
+                </p>
+              ) : (
+                <p className="cd-waiting"><i /> Waiting for your agent…</p>
+              )}
+            </div>
+          </li>
+        </ol>
       </section>
     </div>
   );
