@@ -36,7 +36,7 @@ export default function NewKeyPanel({ created, rotated, onDone }: { created: Cre
         <button type="button" className="cd-btn cd-btn-sm cd-btn-pink" onClick={() => void copy("key")}>{Ico.copy} {copied === "key" ? "Copied" : "Copy key"}</button>
         <button type="button" className="cd-btn cd-btn-sm" onClick={() => void copy("export")}>{copied === "export" ? "Copied" : "Copy export line"}</button>
       </div>
-      <p className="cd-muted">Put it in the shell you start your agent from, or your CI's secrets. Never commit it or paste it in chat.</p>
+      <p className="cd-muted">Add it to your environment: run the export line in the terminal you start your agent from (or add it to ~/.zshrc), or store it in your CI's secrets. Never commit it or paste it into the agent's chat.</p>
       <button type="button" className="cd-btn" onClick={onDone} disabled={!copied}>
         {copied ? "I've saved it" : "Copy the key to continue"}
       </button>

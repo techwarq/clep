@@ -81,7 +81,7 @@ export default function Keys() {
           <h2>Your keys</h2>
         </div>
         {keys === null && <p className="cd-muted">Loading…</p>}
-        {keys?.length === 0 && <p className="cd-muted">No keys yet. Create one above, then give it to your agent.</p>}
+        {keys?.length === 0 && <p className="cd-muted">No keys yet. Create one above, then add it to your environment as CLEP_API_KEY.</p>}
         <div className="cd-keylist">
           {keys?.map((entry) => (
             <KeyRow key={entry.id} entry={entry} planMinutes={plan?.export_minutes ?? 0} onChanged={changed} onRotated={(key) => show(key, true)} />
@@ -113,7 +113,7 @@ export default function Keys() {
           <li>
             <span className="cd-step-n">2</span>
             <div>
-              <h3>Set the key, then paste this into your agent</h3>
+              <h3>Add the key to your environment, then paste this into your agent</h3>
               <CopyField value={paste} />
               <p className="cd-muted">{AGENTS[agent][1]} It installs Clep's recorder, lists your app's features and records a first walkthrough.</p>
             </div>

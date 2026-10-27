@@ -63,7 +63,7 @@ export default function Welcome() {
           <h1>Hi {name}, let&apos;s make your first video.</h1>
           <p className="cd-muted">Your coding agent records your app; Clep edits it into a polished clip. Setup takes about two minutes:</p>
           <ul className="cd-wizard-list">
-            <li>{Ico.keys} Create an API key for your agent</li>
+            <li>{Ico.keys} Create an API key and add it to your environment</li>
             <li>{Ico.integrations} Paste one line into your agent to install Clep</li>
             <li>{Ico.videos} Ask for a video in plain words</li>
           </ul>
@@ -77,7 +77,7 @@ export default function Welcome() {
       {step === 1 && (
         <section className="cd-card cd-wizard-card">
           <h2>Create your API key</h2>
-          <p className="cd-muted">Your agent sends this key with every request. Name it after where it runs, so you can tell keys apart later.</p>
+          <p className="cd-muted">It lives in your environment as CLEP_API_KEY, never in the agent's chat. Name it after where it runs, so you can tell keys apart later.</p>
           {created && !saved ? (
             <NewKeyPanel created={created} rotated={false} onDone={() => { setSaved(true); next(); }} />
           ) : (
@@ -102,9 +102,9 @@ export default function Welcome() {
             <li>
               <span className="cd-step-n">1</span>
               <div>
-                <h3>Set your key in the terminal you start the agent from</h3>
+                <h3>Add the key to your environment</h3>
                 <CopyField value={created ? `export CLEP_API_KEY=${created.key}` : "export CLEP_API_KEY=clep_sk_…"} display={created ? `export CLEP_API_KEY=${created.key.slice(0, 12)}••••••••` : undefined} />
-                {!created && <p className="cd-muted">Use the key you copied in the last step.</p>}
+                <p className="cd-muted">{created ? "" : "Use the key you copied in the last step. "}Run it in the terminal you start the agent from, or add the line to <code>~/.zshrc</code> to keep it in every terminal. Clep's tools read it from there; never paste the key into the agent's chat.</p>
               </div>
             </li>
             <li>

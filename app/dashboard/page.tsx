@@ -11,7 +11,7 @@ const HIDE_WELCOME = "clep_hide_welcome";
 const WEEK = 7 * 24 * 3600 * 1000;
 
 const STEPS = [
-  { title: "Create your API key", text: "Generate a key and give it to your agent", href: "/dashboard/keys", icon: Ico.keys },
+  { title: "Create your API key", text: "Generate a key and add it to your environment", href: "/dashboard/keys", icon: Ico.keys },
   { title: "Install the skill", text: "Paste one line into your coding agent", href: "/dashboard/keys", icon: Ico.integrations },
   { title: "Connect your project", text: "Your agent lists the app's features", href: "/dashboard/projects", icon: Ico.projects },
   { title: "Start shipping", text: "Push a feature and get a video", href: "/dashboard/videos", icon: Ico.videos },
