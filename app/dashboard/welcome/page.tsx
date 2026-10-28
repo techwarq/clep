@@ -92,14 +92,9 @@ export default function Welcome() {
 
       {step === 2 && (
         <section className="cd-card cd-wizard-card">
-          <p className="cd-label">In your terminal</p>
-          <h2>Add the key to your environment</h2>
-          <CopyField value={created ? `export CLEP_API_KEY=${created.key}` : "export CLEP_API_KEY=clep_sk_…"} display={created ? `export CLEP_API_KEY=${created.key.slice(0, 12)}••••••••` : undefined} />
-          <p className="cd-muted">
-            {created ? "" : "Use the key you copied in the last step. "}Run it in the terminal you start your agent from, or add the line to <code>~/.zshrc</code> so every terminal has it.
-          </p>
-          <p className="cd-note">The key stays in your environment. Clep&apos;s tools read it from there, so it never goes into your agent&apos;s chat.</p>
-          <div className="cd-wizard-nav"><button type="button" className="cd-btn cd-btn-pink" onClick={next}>It&apos;s in my terminal {Ico.arrow}</button></div>
+          <h2>Add to your env</h2>
+          <CopyField value={created ? `CLEP_API_KEY=${created.key}` : "CLEP_API_KEY=clep_sk_…"} display={created ? `CLEP_API_KEY=${created.key.slice(0, 12)}••••••••` : undefined} />
+          <div className="cd-wizard-nav"><button type="button" className="cd-btn cd-btn-pink" onClick={next}>Added {Ico.arrow}</button></div>
         </section>
       )}
 

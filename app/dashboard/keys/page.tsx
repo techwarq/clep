@@ -113,9 +113,8 @@ export default function Keys() {
           <li>
             <span className="cd-step-n">2</span>
             <div>
-              <h3>In your terminal: add the key to your environment</h3>
-              <CopyField value="export CLEP_API_KEY=clep_sk_…" display="export CLEP_API_KEY=<your key>" />
-              <p className="cd-muted">Use the key you copied when you created it. Add the line to <code>~/.zshrc</code> to keep it in every terminal.</p>
+              <h3>Add to your env</h3>
+              <CopyField value="CLEP_API_KEY=clep_sk_…" />
             </div>
           </li>
           <li>
