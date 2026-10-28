@@ -1,9 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { HERO_VIDEO, posterSrc, videoSrc } from "../lib/landing";
 
-export default function HeroFilm() {
+export default function HeroFilm({ src }: { src: string }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
 
@@ -20,8 +19,7 @@ export default function HeroFilm() {
       <video
         ref={ref}
         className="film-video"
-        src={videoSrc(HERO_VIDEO.slug)}
-        poster={posterSrc(HERO_VIDEO.slug)}
+        src={src}
         autoPlay
         muted
         loop
@@ -31,9 +29,6 @@ export default function HeroFilm() {
       <button type="button" className="film-sound" onClick={toggleSound}>
         {muted ? "Sound on" : "Sound off"}
       </button>
-      <figcaption className="film-caption">
-        <strong>{HERO_VIDEO.title}</strong> · {HERO_VIDEO.line}
-      </figcaption>
     </figure>
   );
 }

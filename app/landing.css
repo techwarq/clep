@@ -198,16 +198,6 @@
 .waitlist-done { max-width: 480px; padding: 16px 22px; border: 1px solid var(--pink); border-radius: 10px; background: rgba(236, 110, 165, 0.1); font-size: 15px; }
 
 /* ---------- hero film ---------- */
-.explore {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: clamp(64px, 10vw, 128px) 16px 0;
-}
-.explore .display { margin-top: 0; font-size: clamp(40px, 6.4vw, 92px); }
-.explore-sub { margin-top: 24px; max-width: 64ch; font-size: clamp(15px, 1.4vw, 18px); line-height: 1.6; letter-spacing: 0.01em; color: var(--cream-soft); }
-.explore-sub strong { color: var(--cream); font-weight: 650; }
 .btn-soft {
   margin-top: 32px;
   padding: 12px 30px;
@@ -222,11 +212,6 @@
 .btn-soft:hover { transform: translateY(-1px); filter: brightness(1.05); }
 
 .stage { position: relative; max-width: 1240px; margin: 0 auto; padding: 56px clamp(16px, 4vw, 48px) 0; }
-.stage-labels { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; font-size: 13px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
-.stage-link { text-decoration: underline !important; text-underline-offset: 4px; }
-.stage-link:hover { color: var(--pink-soft); }
-.stage-made { display: inline-flex; align-items: center; gap: 10px; }
-.stage-made img { height: 26px; width: auto; }
 
 .film { position: relative; margin: 0; }
 .film-video {
@@ -469,8 +454,6 @@
   .home-logo img { height: 32px; }
   .btn-line { display: none; }
   .demos { grid-template-columns: 1fr; }
-  .stage-labels { font-size: 11px; }
-  .stage-made img { height: 20px; }
   .works-with { flex-wrap: wrap; justify-content: center; }
   .waitlist-row { flex-direction: column; }
   .waitlist input + input { border-left: 0; border-top: 1px solid rgba(253, 248, 225, 0.32); }

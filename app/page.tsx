@@ -120,28 +120,8 @@ export default function Page() {
         </div>
       </section>
 
-      <section className="explore">
-        <h2 className="display">
-          <span className="pink">Explore</span> Videos
-          <br />
-          Made using <span className="pink">Clep</span>
-        </h2>
-        <p className="explore-sub">
-          Explore <strong>Product Demos</strong>, <strong>Walkthroughs</strong>, and <strong>Feature Showcases</strong> created
-          with Clep. Watch how AI agents record products in action and Clep transforms those recordings into polished,
-          ready-to-share videos.
-        </p>
-        <a href="/reserve" className="btn-soft">Create Video</a>
-      </section>
-
-      <section className="stage">
-        <div className="stage-labels">
-          <a href="https://tst.abstraklabs.com" target="_blank" rel="noreferrer" className="stage-link">tst.abstraklabs.com</a>
-          <span className="stage-made">
-            Made with <img src="/brand/clep-logo-cream.png" alt="Clep" width={70} height={27} />
-          </span>
-        </div>
-        <HeroFilm />
+      <section className="stage demo">
+        <HeroFilm src="/clep-demo.mp4" />
       </section>
 
       <section id="how" className="block">

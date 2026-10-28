@@ -11,7 +11,7 @@ import { API_BASE, type CreatedKey } from "../../../lib/platform";
 import "../keys/keys.css";
 import "./welcome.css";
 
-const STEPS = ["Welcome", "API key", "Connect agent", "First call", "First video"];
+const STEPS = ["Welcome", "API key", "Terminal", "Agent", "First call", "First video"];
 const AGENTS: [string, string][] = [
   ["Claude Code", "Open Claude Code in your project folder and paste it."],
   ["Cursor", "Open Cursor's agent chat with the project and paste it."],
@@ -36,7 +36,7 @@ export default function Welcome() {
   const hasKey = saved || (account?.keys ?? 0) > 0;
 
   useEffect(() => {
-    if (step !== 3 || connected) return;
+    if (step !== 4 || connected) return;
     const timer = window.setInterval(() => void refresh(), 4000);
     return () => window.clearInterval(timer);
   }, [step, connected, refresh]);
@@ -64,7 +64,7 @@ export default function Welcome() {
           <p className="cd-muted">Your coding agent records your app; Clep edits it into a polished clip. Setup takes about two minutes:</p>
           <ul className="cd-wizard-list">
             <li>{Ico.keys} Create an API key and add it to your environment</li>
-            <li>{Ico.integrations} Paste one line into your agent to install Clep</li>
+            <li>{Ico.integrations} Paste one setup line into your agent (it never sees the key)</li>
             <li>{Ico.videos} Ask for a video in plain words</li>
           </ul>
           <div className="cd-admin-actions cd-wizard-nav">
@@ -92,35 +92,33 @@ export default function Welcome() {
 
       {step === 2 && (
         <section className="cd-card cd-wizard-card">
-          <h2>Connect your coding agent</h2>
+          <p className="cd-label">In your terminal</p>
+          <h2>Add the key to your environment</h2>
+          <CopyField value={created ? `export CLEP_API_KEY=${created.key}` : "export CLEP_API_KEY=clep_sk_…"} display={created ? `export CLEP_API_KEY=${created.key.slice(0, 12)}••••••••` : undefined} />
+          <p className="cd-muted">
+            {created ? "" : "Use the key you copied in the last step. "}Run it in the terminal you start your agent from, or add the line to <code>~/.zshrc</code> so every terminal has it.
+          </p>
+          <p className="cd-note">The key stays in your environment. Clep&apos;s tools read it from there, so it never goes into your agent&apos;s chat.</p>
+          <div className="cd-wizard-nav"><button type="button" className="cd-btn cd-btn-pink" onClick={next}>It&apos;s in my terminal {Ico.arrow}</button></div>
+        </section>
+      )}
+
+      {step === 3 && (
+        <section className="cd-card cd-wizard-card">
+          <p className="cd-label">In your agent</p>
+          <h2>Set up Clep in your coding agent</h2>
           <div className="cd-pills cd-pills-btn" role="tablist">
             {AGENTS.map(([agentName], i) => (
               <button key={agentName} type="button" role="tab" aria-selected={agent === i} className={agent === i ? "on" : ""} onClick={() => setAgent(i)}>{agentName}</button>
             ))}
           </div>
-          <ol className="cd-onboard">
-            <li>
-              <span className="cd-step-n">1</span>
-              <div>
-                <h3>Add the key to your environment</h3>
-                <CopyField value={created ? `export CLEP_API_KEY=${created.key}` : "export CLEP_API_KEY=clep_sk_…"} display={created ? `export CLEP_API_KEY=${created.key.slice(0, 12)}••••••••` : undefined} />
-                <p className="cd-muted">{created ? "" : "Use the key you copied in the last step. "}Run it in the terminal you start the agent from, or add the line to <code>~/.zshrc</code> to keep it in every terminal. Clep's tools read it from there; never paste the key into the agent's chat.</p>
-              </div>
-            </li>
-            <li>
-              <span className="cd-step-n">2</span>
-              <div>
-                <h3>Paste this into {AGENTS[agent][0]}</h3>
-                <CopyField value={paste} />
-                <p className="cd-muted">{AGENTS[agent][1]} It installs Clep's recorder and lists your app's features.</p>
-              </div>
-            </li>
-          </ol>
+          <CopyField value={paste} />
+          <p className="cd-muted">{AGENTS[agent][1]} It installs Clep&apos;s recorder and lists your app&apos;s features. This line has no key in it.</p>
           <div className="cd-wizard-nav"><button type="button" className="cd-btn cd-btn-pink" onClick={next}>I pasted it {Ico.arrow}</button></div>
         </section>
       )}
 
-      {step === 3 && (
+      {step === 4 && (
         <section className="cd-card cd-wizard-card">
           <h2>{connected ? "Your agent is connected" : "Waiting for your agent…"}</h2>
           {connected ? (
@@ -138,7 +136,7 @@ export default function Welcome() {
         </section>
       )}
 
-      {step === 4 && (
+      {step === 5 && (
         <section className="cd-card cd-wizard-card">
           <h2>Ask for your first video</h2>
           <p className="cd-muted">Say it to your agent in plain words. It records, Clep edits, and the clip shows up in Videos while it renders.</p>

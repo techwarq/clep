@@ -113,13 +113,21 @@ export default function Keys() {
           <li>
             <span className="cd-step-n">2</span>
             <div>
-              <h3>Add the key to your environment, then paste this into your agent</h3>
-              <CopyField value={paste} />
-              <p className="cd-muted">{AGENTS[agent][1]} It installs Clep's recorder, lists your app's features and records a first walkthrough.</p>
+              <h3>In your terminal: add the key to your environment</h3>
+              <CopyField value="export CLEP_API_KEY=clep_sk_…" display="export CLEP_API_KEY=<your key>" />
+              <p className="cd-muted">Use the key you copied when you created it. Add the line to <code>~/.zshrc</code> to keep it in every terminal.</p>
             </div>
           </li>
           <li>
-            <span className={`cd-step-n ${agentSeen ? "ok" : ""}`}>3</span>
+            <span className="cd-step-n">3</span>
+            <div>
+              <h3>In your agent: paste this setup line</h3>
+              <CopyField value={paste} />
+              <p className="cd-muted">{AGENTS[agent][1]} It has no key in it: Clep&apos;s tools read CLEP_API_KEY from your environment, so the key never goes into the chat.</p>
+            </div>
+          </li>
+          <li>
+            <span className={`cd-step-n ${agentSeen ? "ok" : ""}`}>4</span>
             <div>
               {agentSeen ? (
                 <p className="cd-connected">

@@ -13,12 +13,6 @@ const MEDIA_BASE = (process.env.NEXT_PUBLIC_MEDIA_URL || "https://media.clep.abs
 export const videoSrc = (slug: string) => `${MEDIA_BASE}/${slug}.mp4`;
 export const posterSrc = (slug: string) => `${MEDIA_BASE}/${slug}.jpg`;
 
-export const HERO_VIDEO: LandingVideo = {
-  slug: "hero-trakstartups",
-  title: "Trakstartups",
-  line: "30 seconds, recorded from the live product.",
-};
-
 export const LAUNCH_VIDEO: LandingVideo = {
   slug: "launch-push",
   title: "Push a feature. Get the launch video.",
