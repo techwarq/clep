@@ -1,38 +1,12 @@
 import "./landing.css";
 import HeroFilm from "../components/HeroFilm";
+import HowRun from "../components/HowRun";
 import InViewVideo from "../components/InViewVideo";
 import PixelGrid from "../components/PixelGrid";
 import StickyNav from "../components/StickyNav";
 import Waitlist from "../components/Waitlist";
 import { EFFECTS, LAUNCH_VIDEO, PACING, SKILL_URL } from "../lib/landing";
 import { PLANS } from "../lib/pricing";
-
-const STEPS = [
-  {
-    name: "Record",
-    call: "clep record",
-    text: "Clep's recorder drives your app in a real browser. Localhost, staging, behind a login.",
-  },
-  {
-    name: "Edit",
-    call: "clep edit",
-    text: "Our engine cuts it: a camera that follows every click, cursor, speed ramps, your backdrop.",
-  },
-  {
-    name: "Ship",
-    call: "clip ready",
-    text: "The MP4 lands in your repo. 16:9, 9:16, 1:1 or the exact size of your landing card.",
-  },
-];
-
-const RUN = [
-  ["›", "make a 10s demo of the signup flow"],
-  ["›", "record.py --url localhost:3000 --name signup"],
-  ["→", "recorded 11.0s at 2x · uploading 42 MB"],
-  ["→", "editing · camera, cursor, pacing"],
-  ["✓", "clip ready: clep/signup.mp4"],
-];
-
 
 const FOOTER_LINKS = [
   { title: "Product", links: [["Work", "#work"], ["How It Works", "#how"], ["Pricing", "/pricing"]] },
@@ -98,9 +72,9 @@ export default function Page() {
           &amp; Every Available Agent
         </p>
         <h1 className="display">
-          <span className="pink">Showcase</span> your
+          <span className="pink">Product videos</span>
           <br />
-          Product <span className="pink">Every Day</span>
+          your agent makes <span className="pink">for you</span>
         </h1>
         <p className="intro-sub">
           Your agent records it, Clep cuts it.
@@ -108,15 +82,8 @@ export default function Page() {
           Walkthroughs, feature demos &amp; mockups.
         </p>
         <div className="give">
-          <h2 className="give-title">
-            Join <span>Private Beta</span>
-          </h2>
-          <p className="give-note">
-            Be the first to use Clep. We&apos;ll email
-            <br />
-            you an access code to get in.
-          </p>
-          <a href="/reserve" className="btn-soft give-cta">Reserve Your Spot</a>
+          <a href="/reserve" className="btn-soft give-cta">Join the Private Beta</a>
+          <p className="give-note">Be the first in. We&apos;ll email you an access code.</p>
         </div>
       </section>
 
@@ -126,27 +93,7 @@ export default function Page() {
 
       <section id="how" className="block">
         <h2 className="block-title">Tell your agent what to film. <span className="pink">It runs Clep.</span></h2>
-        <div className="how">
-          <ol className="how-steps">
-            {STEPS.map((step, i) => (
-              <li key={step.name} className="how-step">
-                <span className="how-num">0{i + 1}</span>
-                <div>
-                  <h3>{step.name} <code>{step.call}</code></h3>
-                  <p>{step.text}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-          <div className="term" aria-label="An agent making a clip">
-            <div className="term-bar"><i /><i /><i /><span>~/acme · agent</span></div>
-            {RUN.map(([mark, line]) => (
-              <p key={line} className={mark === "✓" ? "term-ok" : ""}>
-                <span>{mark}</span> {line}
-              </p>
-            ))}
-          </div>
-        </div>
+        <HowRun />
       </section>
 
       <section className="block launch">
@@ -209,8 +156,8 @@ export default function Page() {
 
       <footer className="home-foot">
         <div className="foot-head">
-          <img src="/brand/clep-mark-cream.png" alt="" width={48} height={57} className="foot-mark" />
-          <img src="/brand/clep-word-cream.png" alt="Clep" width={392} height={171} className="foot-word" />
+          <img src="/brand/clep-mark-gradient.png" alt="" width={48} height={57} className="foot-mark" />
+          <img src="/brand/clep-word-gradient.png" alt="Clep" width={392} height={171} className="foot-word" />
         </div>
 
         <div className="foot-main">
