@@ -72,9 +72,11 @@ export default function Page() {
           &amp; Every Available Agent
         </p>
         <h1 className="display">
-          <span className="pink">Product videos</span>
+          Turn every <span className="pink">shipped feature</span>
           <br />
-          your agent makes <span className="pink">for you</span>
+          into a
+          <img src="/brand/hero-cursor.png" alt="" aria-hidden className="hero-cursor" />
+          <span className="pink">video.</span>
         </h1>
         <p className="intro-sub">
           Your agent records it, Clep cuts it.
