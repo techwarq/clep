@@ -90,6 +90,10 @@ export default function Page() {
       </section>
 
       <section className="stage demo">
+        <p className="made-with">
+          <img src="/brand/clep-mark-gradient.png" alt="" width={14} height={17} />
+          Made with <span className="pink">Clep</span>
+        </p>
         <HeroFilm src={videoSrc("clep-demo")} mobileSrc={videoSrc("clep-demo-720")} poster={posterSrc("clep-demo")} />
       </section>
 

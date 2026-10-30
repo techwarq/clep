@@ -226,6 +226,19 @@
 .stage { position: relative; max-width: 1240px; margin: 0 auto; padding: 56px clamp(16px, 4vw, 48px) 0; }
 .stage.demo { padding-top: clamp(24px, 4vh, 44px); }
 
+.made-with {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--cream-soft);
+}
+.made-with img { display: block; height: 17px; width: auto; }
 .film { position: relative; margin: 0; }
 .film-video {
   display: block;
