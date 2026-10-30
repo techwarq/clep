@@ -142,7 +142,22 @@ export default function PixelGrid() {
       });
     };
 
+    // Phones: hold the frame while a scroll is in flight so the scroll gets the GPU, and run at
+    // 30fps otherwise. The motion is slow breathing, so the lower rate isn't visible.
+    const phone = window.matchMedia("(pointer: coarse)").matches;
+    let scrolling = false, scrollTimer = 0;
+    const onScroll = () => {
+      scrolling = true;
+      clearTimeout(scrollTimer);
+      scrollTimer = window.setTimeout(() => (scrolling = false), 160);
+    };
+    if (phone) window.addEventListener("scroll", onScroll, { passive: true });
+
     const draw = (ms: number) => {
+      if (phone && !still && (scrolling || ms - last * 1000 < 32)) {
+        raf = requestAnimationFrame(draw);
+        return;
+      }
       const t = ms / 1000, dt = Math.min(0.05, last ? t - last : 0);
       last = t;
       ctx.clearRect(0, 0, w, h);
@@ -220,11 +235,20 @@ export default function PixelGrid() {
     raf = requestAnimationFrame(draw);
     let resizeTimer = 0;
     const onResize = () => {
+      // Mobile toolbars change innerHeight as you scroll; rebuilding the grid for that is a
+      // full repaint mid-scroll. The canvas just stretches to cover the small difference.
+      if (window.innerWidth === w && Math.abs(window.innerHeight - h) < 160) return;
       clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(() => { seed(); if (still) draw(0); }, 120);
     };
     window.addEventListener("resize", onResize);
-    return () => { cancelAnimationFrame(raf); clearTimeout(resizeTimer); window.removeEventListener("resize", onResize); };
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(resizeTimer);
+      clearTimeout(scrollTimer);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   return <canvas ref={ref} className="pixel-grid" aria-hidden />;

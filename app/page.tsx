@@ -5,7 +5,7 @@ import InViewVideo from "../components/InViewVideo";
 import PixelGrid from "../components/PixelGrid";
 import StickyNav from "../components/StickyNav";
 import Waitlist from "../components/Waitlist";
-import { EFFECTS, LAUNCH_VIDEO, PACING, SKILL_URL, videoSrc } from "../lib/landing";
+import { EFFECTS, LAUNCH_VIDEO, PACING, SKILL_URL, posterSrc, videoSrc } from "../lib/landing";
 import { PLANS } from "../lib/pricing";
 
 const FOOTER_LINKS = [
@@ -75,7 +75,7 @@ export default function Page() {
           Turn every <span className="pink">shipped feature</span>
           <br />
           into a
-          <img src="/brand/hero-cursor.png" alt="" aria-hidden className="hero-cursor" />
+          <img src="/brand/hero-cursor.webp" alt="" aria-hidden className="hero-cursor" />
           <span className="pink">video.</span>
         </h1>
         <p className="intro-sub">
@@ -90,7 +90,7 @@ export default function Page() {
       </section>
 
       <section className="stage demo">
-        <HeroFilm src={videoSrc("clep-demo")} />
+        <HeroFilm src={videoSrc("clep-demo")} mobileSrc={videoSrc("clep-demo-720")} poster={posterSrc("clep-demo")} />
       </section>
 
       <section id="how" className="block">

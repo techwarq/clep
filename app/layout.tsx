@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Instrument_Serif, Poppins, Public_Sans, Roboto_Serif } from "next/font/google";
+import { IBM_Plex_Mono, Instrument_Serif, Poppins, Public_Sans } from "next/font/google";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import { THEME_BOOT_SCRIPT } from "../lib/theme-boot";
@@ -15,11 +15,6 @@ const display = Instrument_Serif({
   weight: ["400"],
   style: ["normal", "italic"],
   variable: "--font-inst"
-});
-const condensedSerif = Roboto_Serif({
-  subsets: ["latin"],
-  axes: ["wdth", "opsz"],
-  variable: "--font-condensed-serif"
 });
 const mono = IBM_Plex_Mono({
   subsets: ["latin"],
@@ -58,7 +53,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${body.variable} ${display.variable} ${condensedSerif.variable} ${mono.variable} ${logo.variable} ${tight.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${body.variable} ${display.variable} ${mono.variable} ${logo.variable} ${tight.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>
