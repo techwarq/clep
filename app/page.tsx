@@ -5,7 +5,7 @@ import InViewVideo from "../components/InViewVideo";
 import PixelGrid from "../components/PixelGrid";
 import StickyNav from "../components/StickyNav";
 import Waitlist from "../components/Waitlist";
-import { EFFECTS, LAUNCH_VIDEO, PACING, SKILL_URL } from "../lib/landing";
+import { EFFECTS, LAUNCH_VIDEO, PACING, SKILL_URL, videoSrc } from "../lib/landing";
 import { PLANS } from "../lib/pricing";
 
 const FOOTER_LINKS = [
@@ -90,7 +90,7 @@ export default function Page() {
       </section>
 
       <section className="stage demo">
-        <HeroFilm src="/clep-demo.mp4" />
+        <HeroFilm src={videoSrc("clep-demo")} />
       </section>
 
       <section id="how" className="block">

@@ -25,10 +25,29 @@ export default function PixelGrid() {
     if (!canvas || !ctx) return;
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const base = document.createElement("canvas");
-    const bctx = base.getContext("2d");
-    if (!bctx) return;
     let w = 0, h = 0, cols = 0, rows = 0, raf = 0, last = 0, dpr = 1;
     let lit: Lit[] = [], sparks: Spark[] = [], pulses: Pulse[] = [], flashes: Flash[] = [];
+
+    // Canvas shadowBlur re-blurs on every draw call, which is what made this backdrop heavy.
+    // The glows are baked into sprites once and stamped with globalAlpha instead.
+    const sprite = (size: number, blur: number, paint: (g: CanvasRenderingContext2D, o: number) => void) => {
+      const pad = blur * 2, o = pad;
+      const c = document.createElement("canvas");
+      c.width = c.height = (size + pad * 2) * dpr;
+      const g = c.getContext("2d")!;
+      g.scale(dpr, dpr);
+      g.shadowColor = `rgba(${PINK}, 1)`;
+      g.shadowBlur = blur;
+      paint(g, o);
+      return { c, pad, full: size + pad * 2 };
+    };
+    let glowCell = sprite(CELL - 1, 18, () => {}), flashCell = glowCell, spark = glowCell;
+    const makeSprites = () => {
+      const cell = (g: CanvasRenderingContext2D, o: number) => { g.fillStyle = `rgb(${HOT})`; g.fillRect(o, o, CELL - 1, CELL - 1); };
+      glowCell = sprite(CELL - 1, 18, cell);
+      flashCell = sprite(CELL - 1, 22, cell);
+      spark = sprite(5, 8, (g, o) => { g.fillStyle = `rgb(${HOT})`; g.fillRect(o, o, 5, 5); });
+    };
 
     // how "hot" a point is: 1 in the top-left / bottom-right corners, fading to 0 in the middle
     const heat = (x: number, y: number) => {
@@ -55,10 +74,11 @@ export default function PixelGrid() {
 
     // static layer: the grid lines and the beads where they cross, tinted by heat
     const paintBase = () => {
-      base.width = w * dpr;
-      base.height = h * dpr;
+      const raw = document.createElement("canvas");
+      raw.width = w * dpr;
+      raw.height = h * dpr;
+      const bctx = raw.getContext("2d")!;
       bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      bctx.clearRect(0, 0, w, h);
       bctx.lineWidth = 1;
       for (let x = 0.5; x < w; x += CELL) {
         for (let y = 0; y < h; y += CELL) {
@@ -82,10 +102,16 @@ export default function PixelGrid() {
           bctx.fillRect(x - 0.5, y - 0.5, 2, 2);
         }
       }
+      base.width = w * dpr;
+      base.height = h * dpr;
+      const out = base.getContext("2d")!;
+      out.filter = "blur(0.6px)";
+      out.drawImage(raw, 0, 0);
     };
 
     const seed = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      makeSprites();
       w = window.innerWidth;
       h = window.innerHeight;
       canvas.width = w * dpr;
@@ -129,16 +155,13 @@ export default function PixelGrid() {
         const a = s.a * (0.45 + 0.55 * Math.sin(t * s.speed + s.phase));
         if (a <= 0.01) continue;
         if (s.outline) {
-          ctx.shadowBlur = 0;
           ctx.strokeStyle = `rgba(${PINK}, ${a})`;
           ctx.strokeRect(x + 1.5, y + 1.5, CELL - 2, CELL - 2);
         } else if (s.glow) {
-          ctx.shadowColor = `rgba(${PINK}, ${a})`;
-          ctx.shadowBlur = 18;
-          ctx.fillStyle = `rgba(${HOT}, ${Math.min(1, a + 0.3)})`;
-          ctx.fillRect(x + 1, y + 1, CELL - 1, CELL - 1);
+          ctx.globalAlpha = Math.min(1, a + 0.3);
+          ctx.drawImage(glowCell.c, x + 1 - glowCell.pad, y + 1 - glowCell.pad, glowCell.full, glowCell.full);
+          ctx.globalAlpha = 1;
         } else {
-          ctx.shadowBlur = 0;
           ctx.fillStyle = `rgba(${PINK}, ${a * 0.55})`;
           ctx.fillRect(x + 1, y + 1, CELL - 1, CELL - 1);
         }
@@ -146,22 +169,19 @@ export default function PixelGrid() {
 
       flashes = flashes.filter((f) => (f.life -= dt * 1.3) > 0);
       for (const f of flashes) {
-        ctx.shadowColor = `rgba(${PINK}, ${f.life})`;
-        ctx.shadowBlur = 22;
-        ctx.fillStyle = `rgba(${HOT}, ${f.life * 0.9})`;
-        ctx.fillRect(f.c * CELL + 1, f.r * CELL + 1, CELL - 1, CELL - 1);
+        ctx.globalAlpha = f.life * 0.9;
+        ctx.drawImage(flashCell.c, f.c * CELL + 1 - flashCell.pad, f.r * CELL + 1 - flashCell.pad, flashCell.full, flashCell.full);
       }
 
       // twinkling pixel sparks
-      ctx.shadowColor = `rgba(${PINK}, 1)`;
-      ctx.shadowBlur = 8;
       for (const s of sparks) {
         const k = Math.max(0, Math.sin(t * s.speed + s.phase));
         if (k < 0.08) continue;
-        ctx.fillStyle = `rgba(${HOT}, ${0.25 + 0.75 * k})`;
-        const z = s.size * (0.5 + 0.5 * k);
-        ctx.fillRect(s.x - z / 2, s.y - z / 2, z, z);
+        const z = s.size * (0.5 + 0.5 * k), scale = z / 5, full = spark.full * scale;
+        ctx.globalAlpha = 0.25 + 0.75 * k;
+        ctx.drawImage(spark.c, s.x - full / 2, s.y - full / 2, full, full);
       }
+      ctx.globalAlpha = 1;
 
       // short electric pulses along the lines
       ctx.lineCap = "round";
@@ -178,9 +198,9 @@ export default function PixelGrid() {
         g.addColorStop(0, `rgba(${PINK}, 0)`);
         g.addColorStop(1, `rgba(${HOT}, ${a})`);
         ctx.strokeStyle = g;
-        ctx.shadowColor = `rgba(${PINK}, ${a})`;
-        ctx.shadowBlur = 10;
-        ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hx, hy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hx, hy);
+        ctx.globalAlpha = 0.3; ctx.lineWidth = 5; ctx.stroke();
+        ctx.globalAlpha = 1; ctx.lineWidth = 1.4; ctx.stroke();
         ctx.fillStyle = `rgba(255, 240, 246, ${a})`;
         ctx.fillRect(hx - 1.5, hy - 1.5, 3, 3);
         const cell = Math.floor(p.pos / CELL);
@@ -193,7 +213,6 @@ export default function PixelGrid() {
         }
       }
       ctx.lineWidth = 1;
-      ctx.shadowBlur = 0;
       if (!still) raf = requestAnimationFrame(draw);
     };
 
