@@ -37,7 +37,7 @@ const FAQ = [
   },
   {
     q: "What does it cost?",
-    a: "Free to start, with every effect and format. Pro is $19 a month and Studio $39 a month when you post more.",
+    a: "Free to start, with every effect and format. Pro is $12 a month and Studio $20 a month when you post more.",
   },
 ];
 
