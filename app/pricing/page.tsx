@@ -7,7 +7,7 @@ import { ADDONS, COMPARE, type Cell } from "../../lib/pricing";
 
 export const metadata: Metadata = {
   title: "Pricing — Clep",
-  description: "Free to start. Pro $12 a month, Studio $20 a month. Every effect and every format on every plan.",
+  description: "Free to start. Pro $19 a month, Studio $39 a month. Every effect and every format on every plan.",
 };
 
 const FAQ = [

@@ -12,7 +12,7 @@ export default function PricingPlans() {
       <div className="billing" role="group" aria-label="Billing period">
         <button type="button" aria-pressed={!yearly} onClick={() => setYearly(false)}>Monthly</button>
         <button type="button" aria-pressed={yearly} onClick={() => setYearly(true)}>
-          Yearly <span>save up to 20%</span>
+          Yearly <span>save 20%</span>
         </button>
       </div>
 

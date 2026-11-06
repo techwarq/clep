@@ -23,8 +23,8 @@ export const PLANS: Plan[] = [
   },
   {
     name: "Pro",
-    monthly: 12,
-    yearly: 10,
+    monthly: 19,
+    yearly: 15,
     for: "Solo founders who post often",
     minutes: "10 export minutes a month (~20 clips)",
     limit: 10,
@@ -33,8 +33,8 @@ export const PLANS: Plan[] = [
   },
   {
     name: "Studio",
-    monthly: 20,
-    yearly: 16,
+    monthly: 39,
+    yearly: 31,
     for: "Small teams that ship daily",
     minutes: "30 export minutes a month",
     limit: 30,
