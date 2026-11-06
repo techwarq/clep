@@ -66,7 +66,7 @@ export default function Page() {
       <section id="top" className="intro">
         <p className="works-with">
           Works with
-          <span className="agents" aria-label="Claude Code, Cursor, Codex">
+          <span className="agents" aria-label="Claude Code, Codex, Cursor">
             <AgentIcons />
           </span>
           &amp; Every Available Agent
@@ -211,15 +211,24 @@ function AgentIcons() {
         </g>
         <rect x="6" y="3" width="2" height="2" fill="#1a1210" /><rect x="14" y="3" width="2" height="2" fill="#1a1210" />
       </svg>
-      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden>
-        <path d="M8 1 L14.5 4.7 L14.5 11.3 L8 15 L1.5 11.3 L1.5 4.7 Z" fill="#3a3a3a" stroke="#d8d8d8" strokeWidth="1" />
-        <path d="M8 1 L8 8 L14.5 11.3 M8 8 L1.5 11.3" stroke="#d8d8d8" strokeWidth="1" fill="none" />
-        <path d="M8 1 L14.5 4.7 L8 8 L1.5 4.7 Z" fill="#f2f2f2" />
-      </svg>
       <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
-        <rect width="16" height="16" rx="4" fill="#5b7cfa" />
-        <circle cx="8" cy="8" r="4.2" fill="none" stroke="#fff" strokeWidth="1.6" />
-        <circle cx="8" cy="8" r="1.4" fill="#fff" />
+        <defs>
+          <linearGradient id="codex-g" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#b4a8ff" />
+            <stop offset="1" stopColor="#4a4ff5" />
+          </linearGradient>
+        </defs>
+        <g fill="url(#codex-g)">
+          <circle cx="8" cy="8" r="6.2" />
+          <circle cx="8.0" cy="3.3" r="2.5" /><circle cx="11.3" cy="4.7" r="2.5" /><circle cx="12.7" cy="8.0" r="2.5" /><circle cx="11.3" cy="11.3" r="2.5" /><circle cx="8.0" cy="12.7" r="2.5" /><circle cx="4.7" cy="11.3" r="2.5" /><circle cx="3.3" cy="8.0" r="2.5" /><circle cx="4.7" cy="4.7" r="2.5" />
+        </g>
+        <path d="M5.2 5.4 L7.4 8 L5.2 10.6" fill="none" stroke="#14141c" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M8.8 10.6 H11.4" stroke="#14141c" strokeWidth="1.4" strokeLinecap="round" />
+      </svg>
+      <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden>
+        <path d="M8 0.8 L14.6 4.6 L14.6 11.4 L8 15.2 L1.4 11.4 L1.4 4.6 Z" fill="#f2f2f2" />
+        <path d="M3.4 5.4 L13.2 4.9 L8.4 13.2 Z" fill="#1c1c1c" />
+        <path d="M3.4 5.4 L13.2 4.9 L8.2 8.2 Z" fill="#f2f2f2" opacity="0.18" />
       </svg>
     </>
   );
