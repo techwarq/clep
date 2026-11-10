@@ -57,7 +57,7 @@ export default function Integrations() {
         <div className="cd-card-head">
           <div>
             <h2>API and webhooks <Soon /></h2>
-            <p>Start renders from your own tools and get a webhook when a clip is ready. Studio plan.</p>
+            <p>Start renders from your own tools and get a webhook when a clip is ready.</p>
           </div>
         </div>
       </section>
