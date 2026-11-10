@@ -165,6 +165,13 @@ export const listClips = async () => (await json<{ clips: Clip[] }>("/api/me/cli
 export const getClip = (id: string) => json<Clip>(`/api/me/clips/${encodeURIComponent(id)}`);
 export const startClip = (body: { url: string; name?: string; prompt?: string }) => send<Clip>("POST", "/api/me/clips", body);
 export const retryClip = (id: string) => send<{ id: string; status: ClipStatus }>("POST", `/api/me/clips/${encodeURIComponent(id)}/retry`);
+export type PaidPlan = "pro" | "studio";
+export type Subscription = { status: string; current_period_end: string | null; cancel_at_period_end: boolean };
+export type BillingState = { plan: Plan; status: string | null; renews_at: string | null; cancel_at_period_end: boolean; subscription: Subscription | null };
+export const getBilling = () => json<BillingState>("/api/me/billing");
+export const startCheckout = (plan: PaidPlan) => send<{ checkout_url: string }>("POST", "/api/me/billing/checkout", { plan });
+export const cancelPlan = () => send<{ subscription: Subscription | null }>("POST", "/api/me/billing/cancel");
+export const resumePlan = () => send<{ subscription: Subscription | null }>("POST", "/api/me/billing/resume");
 export const listProjects = async () => (await json<{ projects: Project[] }>("/api/me/projects")).projects;
 export const getBrandKit = async () => (await json<{ kit: BrandKit | null }>("/api/me/brand")).kit;
 export const saveBrandKit = async (kit: BrandKit) => (await send<{ kit: BrandKit }>("PUT", "/api/me/brand", { kit })).kit;
