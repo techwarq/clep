@@ -54,7 +54,7 @@ export default function Billing() {
           <div>
             <p className="cd-label">Plan</p>
             <p className="cd-big">{usage ? `${usage.plan[0].toUpperCase()}${usage.plan.slice(1)}` : "…"}</p>
-            <p className="cd-stat-note">{usage?.plan === "beta" ? "Free while in beta" : "Billed monthly"}</p>
+            <p className="cd-stat-note">{usage?.plan === "beta" ? "Free while in beta" : usage?.plan === "free" ? "Free · upgrade any time" : "Billed monthly"}</p>
           </div>
         </div>
         <div className="cd-stat">
