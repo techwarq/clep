@@ -11,6 +11,7 @@ import { Ico } from "./icons";
 
 const NAV = [
   { href: "/dashboard", label: "Home", icon: Ico.home },
+  { href: "/dashboard/start", label: "Getting started", icon: Ico.start },
   { href: "/dashboard/videos", label: "Videos", icon: Ico.videos },
   { href: "/dashboard/projects", label: "Projects", icon: Ico.projects },
   { href: "/dashboard/brand", label: "Brand Kit", icon: Ico.brand },

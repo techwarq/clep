@@ -122,7 +122,7 @@ export default function Home() {
           {!loaded && <p className="cd-muted">Loading…</p>}
           {loaded && clips.length === 0 && (
             <Empty title="No videos yet" text="Ask your agent for a demo, e.g. “make a 20s demo of the signup flow”. It shows up here live.">
-              <Link href="/dashboard/keys" className="cd-btn cd-btn-pink">Connect your agent {Ico.arrow}</Link>
+              <Link href="/dashboard/start" className="cd-btn cd-btn-pink">Connect your agent {Ico.arrow}</Link>
             </Empty>
           )}
           <div className="cd-rows">
