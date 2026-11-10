@@ -30,7 +30,7 @@ export default function Projects() {
       {loaded && projects.length === 0 && (
         <section className="cd-card">
           <Empty title="No projects yet" text="Paste the setup line into your coding agent. It reads your repo, writes .clep/features.json and the project appears here.">
-            <Link href="/dashboard/keys" className="cd-btn cd-btn-pink">Connect your agent {Ico.arrow}</Link>
+            <Link href="/dashboard/start" className="cd-btn cd-btn-pink">Connect your agent {Ico.arrow}</Link>
           </Empty>
         </section>
       )}

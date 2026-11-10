@@ -11,11 +11,10 @@ import { Ico } from "./icons";
 
 const NAV = [
   { href: "/dashboard", label: "Home", icon: Ico.home },
+  { href: "/dashboard/start", label: "Getting started", icon: Ico.start },
   { href: "/dashboard/videos", label: "Videos", icon: Ico.videos },
-  { href: "/dashboard/projects", label: "Projects", icon: Ico.projects },
   { href: "/dashboard/brand", label: "Brand Kit", icon: Ico.brand },
   { href: "/dashboard/privacy", label: "Privacy", icon: Ico.privacy },
-  { href: "/dashboard/integrations", label: "Integrations", icon: Ico.integrations },
   { href: "/dashboard/keys", label: "API Keys", icon: Ico.keys },
   { href: "/dashboard/billing", label: "Usage & Billing", icon: Ico.billing },
   { href: "/dashboard/settings", label: "Settings", icon: Ico.settings },

@@ -50,7 +50,7 @@ export default function Settings() {
         <div className="cd-card-head">
           <div>
             <h2>Team members <Soon /></h2>
-            <p>Invite teammates to share projects, brand kits and minutes. Studio includes 3 seats.</p>
+            <p>Invite teammates to share projects, brand kits and minutes.</p>
           </div>
           <button type="button" className="cd-btn" disabled>Invite</button>
         </div>

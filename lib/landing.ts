@@ -82,7 +82,7 @@ export const EFFECTS: Effect[] = [
     slug: "effect-captions",
     title: "Captions",
     detected: "A narrator script",
-    line: "Word-by-word captions, timed to the voiceover and the clicks.",
+    line: "Word-by-word captions, timed to the clicks.",
   },
   {
     slug: "effect-keys",

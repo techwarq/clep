@@ -60,7 +60,7 @@ function VideosInner() {
         {!loaded && <p className="cd-muted">Loading…</p>}
         {loaded && clips.length === 0 && (
           <Empty title="No videos yet" text="Ask your coding agent for a demo and it appears here, stage by stage.">
-            <Link href="/dashboard/keys" className="cd-btn cd-btn-pink">Connect your agent {Ico.arrow}</Link>
+            <Link href="/dashboard/start" className="cd-btn cd-btn-pink">Connect your agent {Ico.arrow}</Link>
           </Empty>
         )}
         {loaded && clips.length > 0 && shown.length === 0 && <Empty title="Nothing matches" text="Try another filter or search." />}

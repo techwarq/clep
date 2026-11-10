@@ -19,7 +19,7 @@ export const PLANS: Plan[] = [
     for: "Trying it out",
     minutes: "1 export minute a month",
     limit: 1,
-    highlights: ["Every effect, every format", "1080p60, clips up to 30 s", "1 interactive demo, branded", "\"Made with Clep\" badge"],
+    highlights: ["Every effect, every format", "1080p60, clips up to 30 s", "\"Made with Clep\" badge"],
   },
   {
     name: "Pro",
@@ -28,17 +28,17 @@ export const PLANS: Plan[] = [
     for: "Solo founders who post often",
     minutes: "10 export minutes a month (~20 clips)",
     limit: 10,
-    highlights: ["Up to 4K60, clips up to 2 min", "No badge, captions", "5 min of AI voiceover", "Unlimited interactive demos", "1 brand kit, 1 GitHub repo"],
+    highlights: ["Up to 4K60, clips up to 2 min", "No \"Made with Clep\" badge", "1 brand kit", "Videos kept for 30 days"],
     featured: true,
   },
   {
     name: "Studio",
     monthly: 39,
     yearly: 31,
-    for: "Small teams that ship daily",
+    for: "Builders who ship every day",
     minutes: "30 export minutes a month",
     limit: 30,
-    highlights: ["4K60, clips up to 5 min", "15 min of AI voiceover", "Unlimited brand kits and repos", "API, webhooks, 3 seats", "Live-HTML demos + analytics", "Priority rendering"],
+    highlights: ["4K60, clips up to 5 min", "Unlimited brand kits", "Priority rendering", "Videos kept for 90 days"],
   },
 ];
 
@@ -55,7 +55,7 @@ export const COMPARE: { group: string; rows: [string, Cell, Cell, Cell][] }[] = 
       ["Formats: 16:9, 9:16, 1:1, custom size", true, true, true],
       ["Watermark", "\"Made with Clep\"", "None", "None"],
       ["Render queue", "Standard", "Standard", "Priority"],
-      ["Videos kept for", "7 days", "90 days", "1 year"],
+      ["Videos kept for", "7 days", "30 days", "90 days"],
     ],
   },
   {
@@ -63,24 +63,7 @@ export const COMPARE: { group: string; rows: [string, Cell, Cell, Cell][] }[] = 
     rows: [
       ["Zooms, cursor, speed-ups, dead-air cuts, looks", true, true, true],
       ["Privacy blur and keystrokes", true, true, true],
-      ["Captions", false, true, true],
-      ["AI voiceover", false, "5 min/mo", "15 min/mo"],
       ["Brand kit", false, "1", "Unlimited"],
-    ],
-  },
-  {
-    group: "Sharing",
-    rows: [
-      ["Interactive demos", "1, branded", "Unlimited", "Unlimited"],
-      ["Live-HTML demos and step analytics", false, false, true],
-      ["GitHub: a clip on every PR", false, "1 repo", "Unlimited repos"],
-    ],
-  },
-  {
-    group: "Team",
-    rows: [
-      ["API and webhooks", false, false, true],
-      ["Seats", "1", "1", "3"],
     ],
   },
 ];

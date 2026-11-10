@@ -9,6 +9,7 @@ function Svg({ children, size = 18 }: { children: React.ReactNode; size?: number
 
 export const Ico = {
   home: <Svg><path d="M4 10.5L12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z" /></Svg>,
+  start: <Svg><path d="M5.5 20.5V4M5.5 4.5h11l-2.5 4 2.5 4h-11" /></Svg>,
   videos: <Svg><rect x="3.5" y="5" width="17" height="14" rx="3" /><path d="M10.5 9.5v5l4.2-2.5z" /></Svg>,
   projects: <Svg><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" /></Svg>,
   brand: <Svg><circle cx="12" cy="12" r="8.5" /><circle cx="8.5" cy="10" r="1.2" /><circle cx="12" cy="7.8" r="1.2" /><circle cx="15.5" cy="10" r="1.2" /><path d="M12 20.5c-1.5 0-2-1-2-2s1-1.8 2.2-1.8h1.6a2.7 2.7 0 0 0 2.7-2.7" /></Svg>,

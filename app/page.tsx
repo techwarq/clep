@@ -5,12 +5,12 @@ import InViewVideo from "../components/InViewVideo";
 import PixelGrid from "../components/PixelGrid";
 import StickyNav from "../components/StickyNav";
 import Waitlist from "../components/Waitlist";
-import { EFFECTS, LAUNCH_VIDEO, PACING, SKILL_URL, posterSrc, videoSrc } from "../lib/landing";
+import { EFFECTS, LAUNCH_VIDEO, PACING, posterSrc, videoSrc } from "../lib/landing";
 import { PLANS } from "../lib/pricing";
 
 const FOOTER_LINKS = [
   { title: "Product", links: [["Work", "#work"], ["How It Works", "#how"], ["Pricing", "/pricing"]] },
-  { title: "Resources", links: [["Docs", SKILL_URL], ["Common Questions", "#faq"]] },
+  { title: "Resources", links: [["Common Questions", "#faq"]] },
   { title: "Account", links: [["Reserve Your Spot", "/reserve"], ["Login", "/login"]] },
 ];
 
