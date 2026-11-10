@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ActivityTable from "../../../components/dash/admin/ActivityTable";
 import MembersTable from "../../../components/dash/admin/MembersTable";
 import RequestsTable from "../../../components/dash/admin/RequestsTable";
 import { PageHead } from "../../../components/dash/ui";
@@ -9,7 +10,7 @@ import "./admin.css";
 
 export default function Admin() {
   const { account, loaded } = useDash();
-  const [tab, setTab] = useState<"requests" | "members">("requests");
+  const [tab, setTab] = useState<"requests" | "members" | "activity">("requests");
 
   if (loaded && account && !account.is_admin) {
     return (
@@ -21,13 +22,14 @@ export default function Admin() {
 
   return (
     <div className="cd-page">
-      <PageHead title="Admin" sub="Who's asking for access, who's in, and which plan they're on.">
+      <PageHead title="Admin" sub="Who's asking for access, who's in, which plan they're on, and what they actually do.">
         <div className="cd-pills cd-pills-btn">
           <button type="button" className={tab === "requests" ? "on" : ""} onClick={() => setTab("requests")}>Requests</button>
           <button type="button" className={tab === "members" ? "on" : ""} onClick={() => setTab("members")}>Members</button>
+          <button type="button" className={tab === "activity" ? "on" : ""} onClick={() => setTab("activity")}>Activity</button>
         </div>
       </PageHead>
-      {account?.is_admin && (tab === "requests" ? <RequestsTable /> : <MembersTable />)}
+      {account?.is_admin && (tab === "requests" ? <RequestsTable /> : tab === "members" ? <MembersTable /> : <ActivityTable />)}
     </div>
   );
 }

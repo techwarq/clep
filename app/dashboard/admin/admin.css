@@ -7,3 +7,10 @@
 .cd .cd-admin-actions .cd-label { margin: 0; }
 .cd .cd-admin-search { max-width: 280px; }
 .cd .cd-select { width: auto; min-width: 120px; text-transform: capitalize; }
+.cd .cd-activity-funnel { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 14px; }
+.cd .cd-activity-funnel button { display: grid; gap: 2px; padding: 14px; border: 1px solid var(--hair); border-radius: 12px; background: none; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.cd .cd-activity-funnel button.on { border-color: var(--accent-text); }
+.cd .cd-activity-funnel b { font-size: 24px; }
+.cd .cd-activity-funnel span { font-size: 13px; text-transform: capitalize; opacity: .75; }
+.cd .cd-activity-feed { display: grid; gap: 8px; margin-top: 14px; font-size: 14px; }
+.cd .cd-activity-feed p { margin: 0; overflow-wrap: anywhere; }

@@ -153,6 +153,16 @@ export const listRequests = async (status?: "pending" | "approved") =>
   (await json<{ requests: AccessRequest[] }>(`/api/admin/requests${status ? `?status=${status}` : ""}`)).requests;
 export const approveRequest = (id: string) => send<Approval>("POST", `/api/admin/requests/${encodeURIComponent(id)}/approve`);
 export const listMembers = () => json<{ members: Member[]; plans: Record<Plan, { exportMinutes: number; requestsPerMinute: number; activeJobs: number }> }>("/api/admin/members");
+export type ActivityStage = "approved" | "signed in" | "connected an agent" | "made a video" | "paying";
+export type ActivityUser = {
+  id: string; email: string; name: string | null; plan: Plan; stage: ActivityStage; is_admin: boolean; approved_at: string | null;
+  sign_ins: number; last_sign_in_at: string | null; keys: number; key_last_used_at: string | null; projects: number;
+  clips: number; clips_done: number; clips_failed: number; clips_active: number; last_clip_at: string | null;
+  minutes_this_month: number; minutes_total: number; model_spend_usd: number; last_active_at: string | null;
+};
+export type ActivityEvent = { at: string; email: string; what: string; detail: string | null };
+export type Activity = { users: ActivityUser[]; stages: Partial<Record<ActivityStage, number>>; recent: ActivityEvent[] };
+export const getActivity = () => json<Activity>("/api/admin/activity");
 export const changePlan = (id: string, plan: Plan) => send<{ ok: true }>("PATCH", `/api/admin/members/${encodeURIComponent(id)}`, { plan });
 const keyPath = (id: string) => `/api/me/keys/${encodeURIComponent(id)}`;
 export const listKeys = () => json<{ keys: AccessKey[]; plan: PlanLimits }>("/api/me/keys");
