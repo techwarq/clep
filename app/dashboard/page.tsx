@@ -12,8 +12,8 @@ const WEEK = 7 * 24 * 3600 * 1000;
 
 const STEPS = [
   { title: "Create your API key", text: "Generate a key and add it to your environment", href: "/dashboard/keys", icon: Ico.keys },
-  { title: "Install the skill", text: "Paste one line into your coding agent", href: "/dashboard/keys", icon: Ico.integrations },
-  { title: "Connect your project", text: "Your agent lists the app's features", href: "/dashboard/projects", icon: Ico.projects },
+  { title: "Install the skill", text: "Paste one line into your coding agent", href: "/dashboard/start", icon: Ico.integrations },
+  { title: "Connect your project", text: "Your agent lists the app's features", href: "/dashboard/start", icon: Ico.projects },
   { title: "Start shipping", text: "Push a feature and get a video", href: "/dashboard/videos", icon: Ico.videos },
 ];
 
@@ -57,8 +57,8 @@ export default function Home() {
   const agentSeen = !!account?.connected || projects.length > 0 || clips.length > 0;
   const setup = [
     { label: "Create an API key", done: (account?.keys ?? 0) > 0, href: "/dashboard/keys" },
-    { label: "Install the Clep skill in your agent", done: agentSeen, href: "/dashboard/keys" },
-    { label: "Connect your first project", done: projects.length > 0, href: "/dashboard/projects" },
+    { label: "Install the Clep skill in your agent", done: agentSeen, href: "/dashboard/start" },
+    { label: "Connect your first project", done: projects.length > 0, href: "/dashboard/start" },
     { label: "Record your first video", done: ready.length > 0, href: "/dashboard/keys" },
   ];
   const setupDone = setup.filter((s) => s.done).length;
