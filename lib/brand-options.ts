@@ -65,6 +65,29 @@ export const DEVICES = [
   { value: "macbook", name: "MacBook" },
 ];
 
+export const CAPTION_STYLES = [
+  { value: "dark", name: "Dark pill", note: "Quiet, works everywhere" },
+  { value: "light", name: "Light pill", note: "Clean on dark apps" },
+  { value: "brand", name: "Brand colour", note: "Your accent colour" },
+  { value: "bold", name: "Bold subtitle", note: "Big text, no pill" },
+];
+
+export const CHAPTER_STYLES = [
+  { value: "dark", name: "Dark card" },
+  { value: "light", name: "Light card" },
+  { value: "brand", name: "Brand card" },
+  { value: "glass", name: "Glass" },
+  { value: "pill", name: "Pill" },
+  { value: "bar", name: "Lower third" },
+  { value: "badge", name: "Number badge" },
+  { value: "minimal", name: "Small tag" },
+  { value: "off", name: "Off" },
+];
+
+export const ACCENTS = ["#5b6cff", "#ec6fa6", "#ff9f4a", "#22c55e", "#0ea5e9", "#111827"];
+
+export const uploadedBackdropId = (bg = "") => bg.match(/^image:([0-9a-f-]{36})$/i)?.[1] ?? null;
+
 export const CURSOR_SHAPES = [
   { value: "", name: "Arrow", glyph: "↖︎" },
   { value: "hand", name: "Hand", glyph: "☝︎" },
@@ -94,6 +117,7 @@ export const SOUNDS = [
 ];
 
 export function backdropCss(value: string): string {
+  if (value.startsWith("url:")) return `center / cover no-repeat url(${value.slice(4)})`;
   if (value.startsWith("wallpaper:")) return `center / cover no-repeat url(/wallpapers/${value.slice(10)}.jpg)`;
   if (PRESET_STOPS[value]) return `linear-gradient(135deg, ${PRESET_STOPS[value].join(", ")})`;
   if (value.startsWith("solid:")) return value.slice(6);

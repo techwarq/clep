@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import BackdropUpload from "../../../components/dash/BackdropUpload";
+import { Pills, Toggle } from "../../../components/dash/BrandControls";
 import BrandPreview from "../../../components/dash/BrandPreview";
+import BrandText from "../../../components/dash/BrandText";
 import "./brand.css";
 import { PageHead } from "../../../components/dash/ui";
 import { useDash } from "../../../lib/dashboard";
@@ -18,8 +21,9 @@ import {
   backdropCss,
   cursorParts,
   cursorWords,
+  uploadedBackdropId,
 } from "../../../lib/brand-options";
-import { getBrandKit, saveBrandKit, type BrandKit } from "../../../lib/platform";
+import { backdropImageUrl, getBrandKit, saveBrandKit, type BrandKit } from "../../../lib/platform";
 
 const STARTER: BrandKit = { style: "saas", bg: "saas", aspect: "16:9", movement: "standard", captions: true, look: { sound: "warm" } };
 const GROUPS = ["Wallpapers", "Light", "Bold", "Dark", "Solid"] as const;
@@ -31,6 +35,7 @@ export default function Brand() {
   const [custom, setCustom] = useState(["#ec6fa6", "#ffd27a"]);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
+  const [uploaded, setUploaded] = useState<{ bg: string; url: string } | null>(null);
 
   useEffect(() => {
     getBrandKit()
@@ -52,6 +57,14 @@ export default function Brand() {
   };
   const backdrop = kit.bg ?? "saas";
   const dirty = JSON.stringify(kit) !== saved;
+  const uploadedId = uploadedBackdropId(backdrop);
+
+  useEffect(() => {
+    if (!uploadedId || uploaded?.bg === backdrop) return;
+    backdropImageUrl(uploadedId).then((url) => setUploaded({ bg: backdrop, url }), () => setUploaded(null));
+  }, [uploadedId, backdrop, uploaded?.bg]);
+
+  const previewBackdrop = uploadedId && uploaded?.bg === backdrop ? `url:${uploaded.url}` : backdrop;
 
   const save = async () => {
     setBusy(true);
@@ -111,6 +124,7 @@ export default function Brand() {
                 <button type="button" className="cd-btn cd-btn-sm" onClick={() => set({ bg: `solid:${custom[0]}` })}>Use solid</button>
               </div>
             </div>
+            <BackdropUpload preview={uploaded?.url ?? null} chosen={!!uploadedId} onUploaded={(bg) => { setUploaded(null); set({ bg }); }} />
           </section>
 
           <section className="cd-card">
@@ -130,6 +144,13 @@ export default function Brand() {
           <section className="cd-card">
             <h3 className="cd-side-h">Frame</h3>
             <Pills options={DEVICES} value={kit.look?.device ?? ""} onPick={(device) => setLook({ device })} />
+            {kit.look?.device === "browser" && (
+              <div className="cd-fields cd-domain">
+                <p className="cd-label">Address bar shows</p>
+                <input className="cd-input" value={kit.look?.domain ?? ""} maxLength={80} onChange={(e) => setLook({ domain: e.target.value.trim() || undefined })} placeholder="acme.com (instead of localhost)" />
+              </div>
+            )}
+            <p className="cd-muted cd-frame-note">Mac app recordings keep the app&apos;s own title bar, so they never get a browser bar.</p>
             <div className="cd-toggle-row">
               <Toggle label="Glow" on={!!kit.look?.glow} flip={() => setLook({ glow: !kit.look?.glow })} />
               <Toggle label="Reflection" on={!!kit.look?.reflection} flip={() => setLook({ reflection: !kit.look?.reflection })} />
@@ -147,12 +168,11 @@ export default function Brand() {
             <Pills options={CURSOR_SIZES} value={cursor.size} onPick={(size) => setCursor({ size })} />
           </section>
 
+          <BrandText kit={kit} set={set} setLook={setLook} />
+
           <section className="cd-card">
-            <h3 className="cd-side-h">Sound &amp; captions</h3>
+            <h3 className="cd-side-h">Sound</h3>
             <Pills options={SOUNDS.map((s) => ({ value: String(s.value), name: s.name }))} value={String(kit.look?.sound ?? "warm")} onPick={(sound) => setLook({ sound: sound === "false" ? false : sound })} />
-            <div className="cd-toggle-row">
-              <Toggle label="Captions" on={kit.captions !== false} flip={() => set({ captions: kit.captions === false })} />
-            </div>
           </section>
 
           <section className="cd-card">
@@ -166,31 +186,12 @@ export default function Brand() {
 
         <section className="cd-card cd-brand-preview">
           <h3 className="cd-side-h">Preview</h3>
-          <BrandPreview kit={kit} backdrop={backdrop} />
+          <BrandPreview kit={kit} backdrop={previewBackdrop} />
           <p className="cd-muted">
-            {LOOKS.find((l) => l.value === kit.style)?.name} · {BACKDROPS.find((b) => b.value === backdrop)?.name ?? "Custom"} backdrop · {kit.aspect} · {kit.movement} camera
+            {LOOKS.find((l) => l.value === kit.style)?.name} · {uploadedId ? "Your image" : BACKDROPS.find((b) => b.value === backdrop)?.name ?? "Custom"} backdrop · {kit.aspect} · {kit.movement} camera
           </p>
         </section>
       </div>
     </div>
-  );
-}
-
-function Pills<T extends string>({ options, value, onPick }: { options: { value: T; name: string }[]; value: string; onPick: (value: T) => void }) {
-  return (
-    <div className="cd-pills cd-pills-btn">
-      {options.map((o) => (
-        <button key={o.value || o.name} type="button" className={value === o.value ? "on" : ""} onClick={() => onPick(o.value)}>{o.name}</button>
-      ))}
-    </div>
-  );
-}
-
-function Toggle({ label, on, flip }: { label: string; on: boolean; flip: () => void }) {
-  return (
-    <label className="cd-toggle">
-      <button type="button" role="switch" aria-checked={on} aria-label={label} className="cd-switch" onClick={flip} />
-      {label}
-    </label>
   );
 }

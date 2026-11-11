@@ -1,5 +1,6 @@
-import { CURSOR_COLORS, CURSOR_SHAPES, backdropCss, cursorParts } from "../../lib/brand-options";
+import { ACCENTS, CURSOR_COLORS, CURSOR_SHAPES, backdropCss, cursorParts } from "../../lib/brand-options";
 import type { BrandKit } from "../../lib/platform";
+import ChapterCard from "./ChapterCard";
 
 const ASPECT: Record<string, string> = { "16:9": "16 / 9", "9:16": "9 / 16", "1:1": "1 / 1", "4:5": "4 / 5" };
 
@@ -10,13 +11,20 @@ export default function BrandPreview({ kit, backdrop }: { kit: BrandKit; backdro
   const ink = CURSOR_COLORS.find((c) => c.value === cursor.color)?.swatch ?? "#141418";
   const scale = { small: 0.8, large: 1.3, xl: 1.6 }[cursor.size] ?? 1;
   const tall = kit.aspect === "9:16" || kit.aspect === "4:5";
+  const chapter = look.chapter_style ?? "dark";
+  const brand = { "--brand": look.accent ?? ACCENTS[0] } as React.CSSProperties;
 
   return (
-    <div className={`cd-frame look-${kit.style ?? "saas"} ${tall ? "tall" : ""}`} style={{ background: backdropCss(backdrop), aspectRatio: ASPECT[kit.aspect ?? "16:9"] }}>
+    <div className={`cd-frame look-${kit.style ?? "saas"} ${tall ? "tall" : ""}`} style={{ ...brand, background: backdropCss(backdrop), aspectRatio: ASPECT[kit.aspect ?? "16:9"] }}>
       <div className={`cd-frame-window device-${look.device || "window"} ${look.glow ? "glow" : ""} ${look.reflection ? "reflect" : ""}`}>
         <div className="cd-frame-bar">
           <i /><i /><i />
-          {look.device === "browser" && <span className="cd-frame-url">yourapp.com</span>}
+          {look.device === "browser" && (
+            <>
+              <span className="cd-frame-nav">‹ ›</span>
+              <span className="cd-frame-url"><em className="cd-frame-lock" />{look.domain || "yourapp.com"}</span>
+            </>
+          )}
         </div>
         <div className="cd-frame-body">
           <span />
@@ -28,7 +36,8 @@ export default function BrandPreview({ kit, backdrop }: { kit: BrandKit; backdro
           {glyph}
         </span>
       </div>
-      {kit.captions !== false && <span className="cd-frame-caption">Export your report in one click</span>}
+      {chapter !== "off" && <ChapterCard design={chapter} title="Reports" className="cd-frame-chapter" />}
+      {kit.captions !== false && <span className={`cd-frame-caption caption-${look.caption_style ?? "dark"}`}>Export your report in one click</span>}
       {(kit.outro?.brand || kit.outro?.cta) && (
         <span className="cd-frame-outro">
           {kit.outro?.brand && <b>{kit.outro.brand}</b>}
