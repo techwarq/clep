@@ -72,6 +72,13 @@ export function DashProvider({ children }: { children: React.ReactNode }) {
     void refresh();
   }, [leave, refresh]);
 
+  useEffect(() => {
+    const outcome = new URLSearchParams(window.location.search).get("billing");
+    if (!outcome) return;
+    toast(outcome === "done" ? "Payment received. Your plan switches over in a few seconds" : "Checkout cancelled. Nothing was charged");
+    router.replace(window.location.pathname);
+  }, [router, toast]);
+
   const busy = clips.some(isBusy);
   useEffect(() => {
     const t = window.setInterval(() => void refresh(), busy ? 5000 : 15000);

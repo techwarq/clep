@@ -28,7 +28,17 @@ export type BrandKit = {
   aspect?: string;
   movement?: string;
   captions?: boolean;
-  look?: { device?: string; glow?: boolean; reflection?: boolean; cursor?: string; sound?: boolean | string };
+  look?: {
+    device?: string;
+    domain?: string;
+    glow?: boolean;
+    reflection?: boolean;
+    cursor?: string;
+    sound?: boolean | string;
+    caption_style?: string;
+    chapter_style?: string;
+    accent?: string;
+  };
   intro?: { title?: string };
   outro?: { title?: string; cta?: string; brand?: string };
 };
@@ -86,7 +96,7 @@ function keepSession(token: string | null) {
 async function request(path: string, init: RequestInit = {}, token = sessionToken()): Promise<Response> {
   const headers: Record<string, string> = { ...(init.headers as Record<string, string>) };
   if (token) headers.Authorization = `Bearer ${token}`;
-  if (init.body) headers["Content-Type"] = "application/json";
+  if (init.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
   let res: Response;
   try {
     res = await fetch(`${API_BASE}${path}`, { ...init, headers });
@@ -165,22 +175,33 @@ export const listClips = async () => (await json<{ clips: Clip[] }>("/api/me/cli
 export const getClip = (id: string) => json<Clip>(`/api/me/clips/${encodeURIComponent(id)}`);
 export const startClip = (body: { url: string; name?: string; prompt?: string }) => send<Clip>("POST", "/api/me/clips", body);
 export const retryClip = (id: string) => send<{ id: string; status: ClipStatus }>("POST", `/api/me/clips/${encodeURIComponent(id)}/retry`);
+export type PaidPlan = "pro" | "studio";
+export type Subscription = { status: string; current_period_end: string | null; cancel_at_period_end: boolean };
+export type BillingState = { plan: Plan; status: string | null; renews_at: string | null; cancel_at_period_end: boolean; subscription: Subscription | null };
+export const getBilling = () => json<BillingState>("/api/me/billing");
+export const startCheckout = (plan: PaidPlan) => send<{ checkout_url: string }>("POST", "/api/me/billing/checkout", { plan });
+export const cancelPlan = () => send<{ subscription: Subscription | null }>("POST", "/api/me/billing/cancel");
+export const resumePlan = () => send<{ subscription: Subscription | null }>("POST", "/api/me/billing/resume");
 export const listProjects = async () => (await json<{ projects: Project[] }>("/api/me/projects")).projects;
 export const getBrandKit = async () => (await json<{ kit: BrandKit | null }>("/api/me/brand")).kit;
 export const saveBrandKit = async (kit: BrandKit) => (await send<{ kit: BrandKit }>("PUT", "/api/me/brand", { kit })).kit;
+export const uploadBackdrop = async (file: File) =>
+  (await json<{ bg: string }>("/api/me/brand/backdrop", { method: "POST", body: file, headers: { "Content-Type": file.type } })).bg;
+export const backdropImageUrl = (id: string) => blobUrl(`/api/me/brand/backdrop/${encodeURIComponent(id)}`);
 
-const videos = new Map<string, Promise<string>>();
-export function clipVideoUrl(clipId: string): Promise<string> {
-  let url = videos.get(clipId);
+const blobs = new Map<string, Promise<string>>();
+function blobUrl(path: string): Promise<string> {
+  let url = blobs.get(path);
   if (!url) {
-    url = request(`/api/me/clips/${encodeURIComponent(clipId)}/video`)
+    url = request(path)
       .then((r) => r.blob())
       .then((b) => URL.createObjectURL(b));
-    url.catch(() => videos.delete(clipId));
-    videos.set(clipId, url);
+    url.catch(() => blobs.delete(path));
+    blobs.set(path, url);
   }
   return url;
 }
+export const clipVideoUrl = (clipId: string) => blobUrl(`/api/me/clips/${encodeURIComponent(clipId)}/video`);
 
 export const KIND_LABEL: Record<string, string> = { tour: "Walkthrough", feature: "Feature", mockup: "Mockup", launch: "Launch", local: "Local recording" };
 export const kindLabel = (clip: Clip) => KIND_LABEL[clip.kind ?? ""] ?? "Clip";

@@ -163,6 +163,13 @@ html[data-theme="light"] .cd-hero .cd-btn-glass { background: rgba(255, 255, 255
 .cd-plan .cd-btn { margin-top: auto; }
 .cd-danger { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-top: 14px; border-top: 1px solid var(--hair); }
 
+.cd-showcase { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; align-items: start; }
+.cd-showcase-tile { display: grid; gap: 8px; padding: 10px 10px 14px; border: 1px solid var(--hair); border-radius: 18px; background: var(--inset); color: var(--ink); text-decoration: none; transition: border-color .15s; }
+.cd-showcase-tile:hover { border-color: var(--hair-strong); }
+.cd-showcase-video { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; background: #000; object-fit: cover; }
+.cd-showcase-tile h3 { margin: 4px 4px 0; font-size: 15px; }
+.cd-showcase-tile p { margin: 0 4px; font-size: 13px; color: var(--soft); }
+
 @media (max-width: 1180px) {
   .cd-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cd-split, .cd-video-layout { grid-template-columns: minmax(0, 1fr); }

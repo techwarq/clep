@@ -13,6 +13,7 @@ const NAV = [
   { href: "/dashboard", label: "Home", icon: Ico.home },
   { href: "/dashboard/start", label: "Getting started", icon: Ico.start },
   { href: "/dashboard/videos", label: "Videos", icon: Ico.videos },
+  { href: "/dashboard/showcase", label: "Showcase", icon: Ico.play },
   { href: "/dashboard/brand", label: "Brand Kit", icon: Ico.brand },
   { href: "/dashboard/privacy", label: "Privacy", icon: Ico.privacy },
   { href: "/dashboard/keys", label: "API Keys", icon: Ico.keys },

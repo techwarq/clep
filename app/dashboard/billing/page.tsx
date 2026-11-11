@@ -1,15 +1,49 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import { Ico } from "../../../components/dash/icons";
 import { PageHead, Soon, minutesText, thisMonth } from "../../../components/dash/ui";
 import { useDash } from "../../../lib/dashboard";
+import { cancelPlan, getBilling, resumePlan, startCheckout, type BillingState, type PaidPlan } from "../../../lib/platform";
 import { ADDONS, PLANS } from "../../../lib/pricing";
 
+const PAID: Record<string, PaidPlan> = { Pro: "pro", Studio: "studio" };
+const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { month: "long", day: "numeric" }) : "");
+
 export default function Billing() {
-  const { clips, account } = useDash();
+  const { clips, account, fail, refresh } = useDash();
   const usage = account?.usage;
   const month = thisMonth(clips);
   const ready = month.filter((j) => j.status === "done").length;
+  const [billing, setBilling] = useState<BillingState | null>(null);
+  const [working, setWorking] = useState<string | null>(null);
+
+  const load = useCallback(() => getBilling().then(setBilling).catch(fail), [fail]);
+  useEffect(() => void load(), [load, usage?.plan]);
+
+  const upgrade = async (plan: PaidPlan) => {
+    setWorking(plan);
+    try {
+      window.location.href = (await startCheckout(plan)).checkout_url;
+    } catch (e) {
+      fail(e);
+      setWorking(null);
+    }
+  };
+
+  const toggleRenewal = async () => {
+    setWorking("renewal");
+    try {
+      await (billing?.cancel_at_period_end ? resumePlan() : cancelPlan());
+      await Promise.all([load(), refresh()]);
+    } catch (e) {
+      fail(e);
+    } finally {
+      setWorking(null);
+    }
+  };
+
+  const sub = billing?.subscription;
 
   return (
     <div className="cd-page">
@@ -20,7 +54,7 @@ export default function Billing() {
           <div>
             <p className="cd-label">Plan</p>
             <p className="cd-big">{usage ? `${usage.plan[0].toUpperCase()}${usage.plan.slice(1)}` : "…"}</p>
-            <p className="cd-stat-note">{usage?.plan === "beta" ? "Free while in beta" : "Billed monthly"}</p>
+            <p className="cd-stat-note">{usage?.plan === "beta" ? "Free while in beta" : usage?.plan === "free" ? "Free · upgrade any time" : "Billed monthly"}</p>
           </div>
         </div>
         <div className="cd-stat">
@@ -39,6 +73,20 @@ export default function Billing() {
         </div>
       </section>
 
+      {sub && (
+        <section className="cd-card">
+          <div className="cd-card-head">
+            <div>
+              <h2>{billing.plan[0].toUpperCase()}{billing.plan.slice(1)} subscription</h2>
+              <p>{billing.cancel_at_period_end ? `Ends on ${day(billing.renews_at)}; you keep it until then.` : `Renews on ${day(billing.renews_at)}.`}</p>
+            </div>
+            <button type="button" className="cd-btn" disabled={working !== null} onClick={toggleRenewal}>
+              {working === "renewal" ? "Saving…" : billing.cancel_at_period_end ? "Keep my plan" : "Cancel renewal"}
+            </button>
+          </div>
+        </section>
+      )}
+
       <h2 className="cd-h2">Plans</h2>
       <div className="cd-plans">
         {PLANS.map((p) => (
@@ -49,9 +97,15 @@ export default function Billing() {
             <ul>
               {p.highlights.map((h) => <li key={h}>{Ico.check}{h}</li>)}
             </ul>
-            <button type="button" className={`cd-btn cd-btn-block ${p.featured ? "cd-btn-pink" : ""}`} disabled>
-              {p.monthly === 0 ? "Included in beta" : "Upgrade"} {p.monthly > 0 && <Soon />}
-            </button>
+            {PAID[p.name] ? (
+              <button type="button" className={`cd-btn cd-btn-block ${p.featured ? "cd-btn-pink" : ""}`}
+                disabled={working !== null || usage?.plan === PAID[p.name] || !!sub}
+                onClick={() => upgrade(PAID[p.name])}>
+                {usage?.plan === PAID[p.name] ? "Current plan" : working === PAID[p.name] ? "Opening checkout…" : sub ? "Cancel your plan to switch" : "Upgrade"}
+              </button>
+            ) : (
+              <button type="button" className="cd-btn cd-btn-block" disabled>{usage?.plan === "beta" ? "Included in beta" : "Free"}</button>
+            )}
           </section>
         ))}
       </div>
