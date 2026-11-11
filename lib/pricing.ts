@@ -28,7 +28,7 @@ export const PLANS: Plan[] = [
     for: "Solo founders who post often",
     minutes: "10 export minutes a month (~20 clips)",
     limit: 10,
-    highlights: ["Up to 4K60, clips up to 2 min", "No \"Made with Clep\" badge", "1 brand kit", "Videos kept for 30 days"],
+    highlights: ["Up to 4K60, clips up to 2 min", "No \"Made with Clep\" badge", "Unlimited brand kits", "Videos kept for 30 days"],
     featured: true,
   },
   {
@@ -63,7 +63,7 @@ export const COMPARE: { group: string; rows: [string, Cell, Cell, Cell][] }[] = 
     rows: [
       ["Zooms, cursor, speed-ups, dead-air cuts, looks", true, true, true],
       ["Privacy blur and keystrokes", true, true, true],
-      ["Brand kit", false, "1", "Unlimited"],
+      ["Brand kits", false, "Unlimited", "Unlimited"],
     ],
   },
 ];
