@@ -3,12 +3,22 @@
 import { useState } from "react";
 import InViewVideo from "../../../components/InViewVideo";
 import { PageHead } from "../../../components/dash/ui";
+import { useDash } from "../../../lib/dashboard";
 import { videoSrc } from "../../../lib/landing";
 import { SHOWCASE, SHOWCASE_TABS } from "../../../lib/showcase";
 
 export default function Showcase() {
+  const { account, loaded } = useDash();
   const [tab, setTab] = useState<(typeof SHOWCASE_TABS)[number]["key"]>("all");
   const shown = SHOWCASE.filter((video) => tab === "all" || video.kind === tab);
+
+  if (!loaded || !account?.is_admin) {
+    return (
+      <div className="cd-page cd-narrow">
+        <PageHead title="Showcase" sub={loaded ? "This page is not available." : "Loading…"} />
+      </div>
+    );
+  }
 
   return (
     <div className="cd-page">

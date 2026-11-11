@@ -13,7 +13,6 @@ const NAV = [
   { href: "/dashboard", label: "Home", icon: Ico.home },
   { href: "/dashboard/start", label: "Getting started", icon: Ico.start },
   { href: "/dashboard/videos", label: "Videos", icon: Ico.videos },
-  { href: "/dashboard/showcase", label: "Showcase", icon: Ico.play },
   { href: "/dashboard/brand", label: "Brand Kit", icon: Ico.brand },
   { href: "/dashboard/privacy", label: "Privacy", icon: Ico.privacy },
   { href: "/dashboard/keys", label: "API Keys", icon: Ico.keys },
@@ -33,7 +32,10 @@ const MOON = (
   </svg>
 );
 
-const ADMIN_LINK = { href: "/dashboard/admin", label: "Admin", icon: Ico.crown };
+const ADMIN_LINKS = [
+  { href: "/dashboard/showcase", label: "Showcase", icon: Ico.play },
+  { href: "/dashboard/admin", label: "Admin", icon: Ico.crown },
+];
 
 const active = (path: string, href: string) => (href === "/dashboard" ? path === href : path.startsWith(href));
 
@@ -84,7 +86,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </Link>
 
         <nav className="cd-nav">
-          {[...NAV, ...(account?.is_admin ? [ADMIN_LINK] : [])].map((n) => (
+          {[...NAV, ...(account?.is_admin ? ADMIN_LINKS : [])].map((n) => (
             <Link key={n.href} href={n.href} className={active(path, n.href) ? "on" : ""}>
               {n.icon}
               <span>{n.label}</span>
