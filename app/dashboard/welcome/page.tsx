@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Ico } from "../../../components/dash/icons";
 import CreateKeyForm from "../../../components/dash/keys/CreateKeyForm";
@@ -34,12 +34,6 @@ export default function Welcome() {
   const name = account?.user.name?.split(" ")[0] || "there";
   const connected = !!account?.connected || projects.length > 0 || clips.length > 0;
   const hasKey = saved || (account?.keys ?? 0) > 0;
-
-  useEffect(() => {
-    if (step !== 4 || connected) return;
-    const timer = window.setInterval(() => void refresh(), 4000);
-    return () => window.clearInterval(timer);
-  }, [step, connected, refresh]);
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
   const paste = `Set up Clep for this project: read ${API_BASE}/skill.md and follow it`;

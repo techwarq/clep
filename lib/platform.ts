@@ -185,6 +185,35 @@ export const listClips = async () => (await json<{ clips: Clip[] }>("/api/me/cli
 export const getClip = (id: string) => json<Clip>(`/api/me/clips/${encodeURIComponent(id)}`);
 export const startClip = (body: { url: string; name?: string; prompt?: string }) => send<Clip>("POST", "/api/me/clips", body);
 export const retryClip = (id: string) => send<{ id: string; status: ClipStatus }>("POST", `/api/me/clips/${encodeURIComponent(id)}/retry`);
+
+export type DashboardSnapshot = { account: Account; clips: Clip[]; projects: Project[] };
+
+const SSE_EVENT_END = "\n\n";
+
+function snapshotIn(block: string): DashboardSnapshot | null {
+  const event = block.match(/^event: (.*)$/m)?.[1];
+  const data = block.split("\n").filter((line) => line.startsWith("data: ")).map((line) => line.slice(6)).join("\n");
+  return event === "snapshot" && data ? (JSON.parse(data) as DashboardSnapshot) : null;
+}
+
+export async function streamDashboard(onSnapshot: (snapshot: DashboardSnapshot) => void, signal: AbortSignal) {
+  const res = await request("/api/me/events", { signal, headers: { Accept: "text/event-stream" } });
+  if (!res.body) throw new Error("Live updates are not available");
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+  let pending = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) return;
+    pending += value;
+    let end = pending.indexOf(SSE_EVENT_END);
+    while (end >= 0) {
+      const snapshot = snapshotIn(pending.slice(0, end));
+      if (snapshot) onSnapshot(snapshot);
+      pending = pending.slice(end + SSE_EVENT_END.length);
+      end = pending.indexOf(SSE_EVENT_END);
+    }
+  }
+}
 export type PaidPlan = "pro" | "studio";
 export type Subscription = { status: string; current_period_end: string | null; cancel_at_period_end: boolean };
 export type BillingState = { plan: Plan; status: string | null; renews_at: string | null; cancel_at_period_end: boolean; subscription: Subscription | null };
